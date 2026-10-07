@@ -11,7 +11,7 @@ import {
   Loader2,
   Image as ImageIcon
 } from 'lucide-react';
-import { arasaac } from '../services/arasaac';
+import { arasaac, normalizeText } from '../services/arasaac';
 import { STITCH_SEMANTIC_THEMES, ALL_PRESET_PICTOGRAMS } from '../data/pictograms';
 import { tts } from '../services/tts';
 import { optimizeImage } from '../services/imageOptimizer';
@@ -548,7 +548,9 @@ export default function PictogramEditorView({
                 <span>1. TOCA UN PICTOGRAMA DE LA LISTA:</span>
                 <span>
                   {standardPictos.filter(p => {
-                    const matchQ = !replaceFilterQuery.trim() || p.text.toLowerCase().includes(replaceFilterQuery.toLowerCase());
+                    const normTarget = normalizeText(textOverrides[p.id] || p.text);
+                    const normQ = normalizeText(replaceFilterQuery);
+                    const matchQ = !normQ || normTarget.includes(normQ);
                     const matchC = replaceFilterCategory === 'all' || p.category === replaceFilterCategory;
                     return matchQ && matchC;
                   }).length} encontrados
@@ -558,9 +560,9 @@ export default function PictogramEditorView({
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-96 overflow-y-auto p-2 bg-[#f8faff] rounded-2xl border-2 border-[#d8e3fb]">
                 {standardPictos
                   .filter(p => {
-                    const matchQ = !replaceFilterQuery.trim() || 
-                      p.text.toLowerCase().includes(replaceFilterQuery.toLowerCase()) ||
-                      (textOverrides[p.id] && textOverrides[p.id].toLowerCase().includes(replaceFilterQuery.toLowerCase()));
+                    const normTarget = normalizeText(textOverrides[p.id] || p.text);
+                    const normQ = normalizeText(replaceFilterQuery);
+                    const matchQ = !normQ || normTarget.includes(normQ);
                     const matchC = replaceFilterCategory === 'all' || p.category === replaceFilterCategory;
                     return matchQ && matchC;
                   })

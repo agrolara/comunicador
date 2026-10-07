@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Sliders, Volume2, Eye, LayoutGrid, Type, Clock, Smartphone, Check, Sparkles, Download, Upload, ShieldCheck } from 'lucide-react';
+import { Sliders, Volume2, Eye, LayoutGrid, Type, Clock, Smartphone, Monitor, RotateCcw, Check, Sparkles, Download, Upload, ShieldCheck } from 'lucide-react';
 import { tts, VOICE_OPTIONS } from '../services/tts';
 import { analytics } from '../services/analytics';
 import confetti from 'canvas-confetti';
@@ -20,7 +20,9 @@ export default function AccessibilitySettingsView({
   highContrast,
   setHighContrast,
   speakOnTap,
-  setSpeakOnTap
+  setSpeakOnTap,
+  orientationMode = 'auto',
+  setOrientationMode = () => {}
 }) {
   const gridOptions = [
     { id: '2x2', label: '2 x 2 (4 Celdas)', desc: 'Motricidad inicial o baja visión' },
@@ -324,7 +326,109 @@ export default function AccessibilitySettingsView({
           </label>
         </div>
 
-        {/* 5. RESPALDO Y TRANSFERENCIA DE PERFIL (TELÉFONO ⇄ TABLET) */}
+        {/* 5. ORIENTACIÓN DE PANTALLA (MODO APP INSTALADA Y WEB) */}
+        <div className="md:col-span-2 bg-white border-2 border-[#004ac6] rounded-3xl p-5 md:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#e7eeff] text-[#004ac6] rounded-2xl flex items-center justify-center shrink-0">
+                <Smartphone className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-black text-[#111c2d] text-base flex items-center gap-2">
+                  <span>Orientación de Pantalla (Modo App Instalada y Web)</span>
+                  <span className="text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">
+                    Vertical y Horizontal
+                  </span>
+                </h3>
+                <p className="text-xs text-[#737686]">
+                  Permite usar el comunicador tanto de pie (vertical / teléfono) como apaisado (horizontal / tablet o atril).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            {/* 1. Auto */}
+            <button
+              type="button"
+              onClick={() => {
+                setOrientationMode('auto');
+                tts.playChime('pop');
+              }}
+              className={`
+                p-4 rounded-2xl border-2 text-left cursor-pointer transition-all flex flex-col justify-between space-y-2
+                ${orientationMode === 'auto'
+                  ? 'border-[#004ac6] bg-[#dbe1ff]/40 ring-2 ring-[#004ac6]'
+                  : 'border-[#c3c6d7] bg-white hover:bg-slate-50'}
+              `}
+            >
+              <div className="flex items-center justify-between">
+                <span className="p-2 rounded-xl bg-indigo-50 text-indigo-700">
+                  <RotateCcw className="w-5 h-5" />
+                </span>
+                {orientationMode === 'auto' && <Check className="w-5 h-5 text-[#004ac6]" />}
+              </div>
+              <div>
+                <span className="font-black text-sm text-slate-900 block">🔄 Automático</span>
+                <span className="text-[11px] text-slate-500 font-medium">Gira con el sensor físico del teléfono o tablet</span>
+              </div>
+            </button>
+
+            {/* 2. Vertical */}
+            <button
+              type="button"
+              onClick={() => {
+                setOrientationMode('portrait');
+                tts.playChime('pop');
+              }}
+              className={`
+                p-4 rounded-2xl border-2 text-left cursor-pointer transition-all flex flex-col justify-between space-y-2
+                ${orientationMode === 'portrait'
+                  ? 'border-[#004ac6] bg-[#dbe1ff]/40 ring-2 ring-[#004ac6]'
+                  : 'border-[#c3c6d7] bg-white hover:bg-slate-50'}
+              `}
+            >
+              <div className="flex items-center justify-between">
+                <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+                  <Smartphone className="w-5 h-5" />
+                </span>
+                {orientationMode === 'portrait' && <Check className="w-5 h-5 text-[#004ac6]" />}
+              </div>
+              <div>
+                <span className="font-black text-sm text-slate-900 block">📱 Modo Vertical</span>
+                <span className="text-[11px] text-slate-500 font-medium">Fijado en formato vertical (ideal teléfonos)</span>
+              </div>
+            </button>
+
+            {/* 3. Horizontal */}
+            <button
+              type="button"
+              onClick={() => {
+                setOrientationMode('landscape');
+                tts.playChime('pop');
+              }}
+              className={`
+                p-4 rounded-2xl border-2 text-left cursor-pointer transition-all flex flex-col justify-between space-y-2
+                ${orientationMode === 'landscape'
+                  ? 'border-[#004ac6] bg-[#dbe1ff]/40 ring-2 ring-[#004ac6]'
+                  : 'border-[#c3c6d7] bg-white hover:bg-slate-50'}
+              `}
+            >
+              <div className="flex items-center justify-between">
+                <span className="p-2 rounded-xl bg-violet-50 text-violet-700">
+                  <Monitor className="w-5 h-5" />
+                </span>
+                {orientationMode === 'landscape' && <Check className="w-5 h-5 text-[#004ac6]" />}
+              </div>
+              <div>
+                <span className="font-black text-sm text-slate-900 block">💻 Modo Horizontal</span>
+                <span className="text-[11px] text-slate-500 font-medium">Fijado en formato panorámico (ideal tablets y atriles)</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* 6. RESPALDO Y TRANSFERENCIA DE PERFIL (TELÉFONO ⇄ TABLET) */}
         <div className="md:col-span-2 bg-[#111c2d] text-white rounded-3xl p-6 shadow-sm space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">

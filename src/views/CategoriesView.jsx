@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PictoCard from '../components/PictoCard';
+import { normalizeText } from '../services/arasaac';
 import {
   FOOD_PICTOGRAMS,
   ACTIONS_PICTOGRAMS,
@@ -114,10 +115,12 @@ export default function CategoriesView({
 
   // Filter if search query exists
   if (searchQuery.trim() !== '') {
-    const q = searchQuery.toLowerCase();
+    const normQ = normalizeText(searchQuery);
     displayItems = allItems.filter(item => {
-      const effectiveText = (textOverrides[item.id] || item.text).toLowerCase();
-      return effectiveText.includes(q) || (item.category && item.category.toLowerCase().includes(q));
+      const effectiveText = textOverrides[item.id] || item.text;
+      const normText = normalizeText(effectiveText);
+      const normCat = normalizeText(item.category || '');
+      return normText.includes(normQ) || normCat.includes(normQ);
     });
   }
 

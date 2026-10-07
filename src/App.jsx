@@ -40,6 +40,7 @@ export default function App() {
   const [highContrast, setHighContrast] = useState(() => localStorage.getItem('danmax_high_contrast') === 'true');
   const [cardSize, setCardSize] = useState(() => localStorage.getItem('danmax_card_size') || 'md');
   const [speakOnTap, setSpeakOnTap] = useState(() => localStorage.getItem('danmax_speak_on_tap') !== 'false');
+  const [orientationMode, setOrientationMode] = useState(() => localStorage.getItem('danmax_orientation_mode') || 'auto');
 
   // Custom User Pictograms from localStorage (e.g. Chocapic)
   const [customPictograms, setCustomPictograms] = useState(() => {
@@ -88,6 +89,22 @@ export default function App() {
     tts.setProfile(voiceProfile);
     tts.setHapticEnabled(hapticFeedback);
   }, [gridSize, fontFamily, textCase, dwellTime, hapticFeedback, voiceProfile, highContrast, cardSize, speakOnTap]);
+
+  // Sync and manage PWA orientation (auto, portrait, landscape)
+  useEffect(() => {
+    try {
+      localStorage.setItem('danmax_orientation_mode', orientationMode);
+      if (typeof window !== 'undefined' && window.screen && window.screen.orientation) {
+        if (orientationMode === 'portrait') {
+          window.screen.orientation.lock('portrait').catch(() => {});
+        } else if (orientationMode === 'landscape') {
+          window.screen.orientation.lock('landscape').catch(() => {});
+        } else if (orientationMode === 'auto') {
+          window.screen.orientation.unlock().catch(() => {});
+        }
+      }
+    } catch (e) {}
+  }, [orientationMode]);
 
   useEffect(() => {
     try {
@@ -182,7 +199,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#f9f9ff] text-[#111c2d] ${getFontFamilyClass()} ${highContrast ? 'high-contrast' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-[#f9f9ff] text-[#111c2d] ${getFontFamilyClass()} ${highContrast ? 'high-contrast' : ''} ${orientationMode === 'portrait' ? 'orientation-portrait' : orientationMode === 'landscape' ? 'orientation-landscape' : ''}`}>
       {/* Top App Bar con Buscador Rápido y Bottom Navigation Material 3 */}
       <Navbar
         activeTab={activeTab}
@@ -192,6 +209,9 @@ export default function App() {
         imageOverrides={imageOverrides}
         textOverrides={textOverrides}
         customPictograms={customPictograms}
+        sentenceItems={sentenceItems}
+        orientationMode={orientationMode}
+        onOrientationModeChange={setOrientationMode}
       />
 
       {/* Persistent Sentence Bar (accesible siempre que haya frase o en pestañas de comunicación) */}
@@ -304,6 +324,8 @@ export default function App() {
             setHighContrast={setHighContrast}
             speakOnTap={speakOnTap}
             setSpeakOnTap={setSpeakOnTap}
+            orientationMode={orientationMode}
+            setOrientationMode={setOrientationMode}
           />
         )}
 

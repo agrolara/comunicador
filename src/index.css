@@ -64,3 +64,16 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Screen Orientation PWA Support (Vertical & Horizontal) */
+.orientation-portrait {
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
+}
+
+.orientation-landscape {
+  max-width: 100%;
+  width: 100%;
+}

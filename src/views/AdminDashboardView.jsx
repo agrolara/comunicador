@@ -34,7 +34,8 @@ import {
   ChevronRight,
   Send,
   Eye,
-  EyeOff
+  EyeOff,
+  Smartphone
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { aiService, DEFAULT_MODEL, DEFAULT_OPENROUTER_KEY } from '../services/ai';

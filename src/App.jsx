@@ -14,6 +14,7 @@ import TherapistDashboardView from './views/TherapistDashboardView';
 import AccessibilitySettingsView from './views/AccessibilitySettingsView';
 import ModelingGuideView from './views/ModelingGuideView';
 import AdminDashboardView from './views/AdminDashboardView';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import { tts } from './services/tts';
 
@@ -228,7 +229,8 @@ export default function App() {
 
       {/* Main Content Area con espacio inferior generoso para que nada quede oculto tras la barra de navegación */}
       <main className="flex-1 pb-36 sm:pb-40 md:pb-48">
-        {activeTab === 'main' && (
+        <ErrorBoundary key={activeTab} onNavigateHome={() => setActiveTab('main')}>
+          {activeTab === 'main' && (
           <MainBoardView
             onAddToSentence={handleAddToSentence}
             cardSize={cardSize}
@@ -336,6 +338,7 @@ export default function App() {
         {activeTab === 'admin' && (
           <AdminDashboardView />
         )}
+        </ErrorBoundary>
       </main>
     </div>
   );

@@ -986,6 +986,34 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
                   <div className="p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-mono text-xs text-slate-800 whitespace-pre-wrap leading-relaxed select-all max-h-72 overflow-y-auto">
                     {aiOutput}
                   </div>
+
+                  {aiCopilotTab === 'goals' && (
+                    <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 flex items-center justify-between gap-2 flex-wrap">
+                      <span className="font-bold text-purple-900 text-xs">
+                        💡 ¿Deseas incorporar un objetivo al tablero de seguimiento de Dante?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newGoal = {
+                            id: Date.now(),
+                            text: 'Meta SMART IA: Expresión de rechazo y ampliación de LME a 2+ palabras',
+                            target: 5,
+                            current: 0,
+                            completed: false
+                          };
+                          const updated = [...smartGoals, newGoal];
+                          setSmartGoals(updated);
+                          localStorage.setItem('danmax_smart_goals', JSON.stringify(updated));
+                          tts.playChime('success');
+                          alert('¡Meta agregada con éxito a los objetivos activos del terapeuta!');
+                        }}
+                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-xs cursor-pointer shadow-xs active:scale-95 transition-all"
+                      >
+                        + Adoptar como Meta Activa
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

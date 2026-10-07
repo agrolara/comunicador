@@ -163,6 +163,7 @@ export default function AdminDashboardView() {
   const [newPinValue, setNewPinValue] = useState('');
   const [apiKeyInput, setApiKeyInput] = useState(() => aiService.getApiKey());
   const [apiKeySavedSuccess, setApiKeySavedSuccess] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
 
   // Save clients to localStorage
@@ -188,10 +189,16 @@ export default function AdminDashboardView() {
   };
 
   const handleQuickDemoPin = () => {
-    setEnteredPin('1234');
-    setIsAuthenticated(true);
-    sessionStorage.setItem('danmax_admin_auth', 'true');
-    tts.playChime('success');
+    if (adminPin === '1234') {
+      setEnteredPin('1234');
+      setIsAuthenticated(true);
+      sessionStorage.setItem('danmax_admin_auth', 'true');
+      tts.playChime('success');
+    } else {
+      setEnteredPin('1234');
+      setPinError('El PIN predeterminado (1234) ya no es válido porque se configuró un PIN personalizado.');
+      tts.playChime('pop');
+    }
   };
 
   const handleLogout = () => {
@@ -316,8 +323,11 @@ export default function AdminDashboardView() {
   const handleSimulatePaymentApproval = (method = 'Webpay Plus') => {
     if (!selectedClientForPayment) return;
 
-    // Extend renewal by 30 days
-    const nextDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    // Extend renewal by 30 days (from existing future renewalDate, or from now)
+    const curRenewalTime = new Date(selectedClientForPayment.renewalDate).getTime();
+    const nowTime = Date.now();
+    const baseTime = (!isNaN(curRenewalTime) && curRenewalTime > nowTime) ? curRenewalTime : nowTime;
+    const nextDate = new Date(baseTime + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const authCode = `AUTH-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const updated = clients.map(c => {
@@ -478,7 +488,16 @@ export default function AdminDashboardView() {
 
   // KPI Calculations
   const activeClientsCount = clients.filter(c => c.status === 'active').length;
-  const totalBeneficiaries = clients.reduce((acc, c) => acc + (c.devicesAllowed || 1), 0);
+  const totalBeneficiaries = clients.reduce((acc, c) => acc + (Number(c.devicesAllowed) || 1), 0);
+  const calculatedMRR = clients
+    .filter(c => c.status === 'active')
+    .reduce((acc, c) => {
+      if (c.planId === 'family_pro') return acc + 9990;
+      if (c.planId === 'therapist') return acc + 29990;
+      if (c.planId === 'pie_school') return acc + 89990;
+      const numeric = parseInt((c.lastPaymentAmount || '').replace(/[^0-9]/g, ''), 10);
+      return acc + (isNaN(numeric) ? 0 : numeric);
+    }, 0);
 
   // ----------------------------------------------------
   // PIN LOCK VIEW (If not authenticated)
@@ -636,7 +655,7 @@ export default function AdminDashboardView() {
                 <span className="text-[11px] font-black uppercase tracking-wider">MRR Estimado</span>
                 <DollarSign className="w-4 h-4 text-emerald-500" />
               </div>
-              <div className="text-2xl md:text-3xl font-black text-slate-800">$129.970</div>
+              <div className="text-2xl md:text-3xl font-black text-slate-800">${calculatedMRR.toLocaleString('es-CL')}</div>
               <span className="text-[10px] text-emerald-600 font-bold block mt-1">CLP mensual recurrente</span>
             </div>
 
@@ -1321,14 +1340,22 @@ export default function AdminDashboardView() {
             </p>
 
             <form onSubmit={handleSaveApiKey} className="space-y-3">
-              <div>
+              <div className="relative flex items-center">
                 <input
-                  type="text"
+                  type={showApiKey ? 'text' : 'password'}
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
                   placeholder="sk-or-v1-..."
-                  className="w-full p-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono text-xs"
+                  className="w-full pr-10 p-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-mono text-xs"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  title={showApiKey ? 'Ocultar llave' : 'Mostrar llave'}
+                >
+                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
 
               <div className="flex items-center justify-between gap-2">
@@ -1405,7 +1432,20 @@ export default function AdminDashboardView() {
                   <label className="font-bold text-slate-700 block mb-1">Tipo de Cliente:</label>
                   <select
                     value={newClient.type}
-                    onChange={(e) => setNewClient({ ...newClient, type: e.target.value })}
+                    onChange={(e) => {
+                      const newType = e.target.value;
+                      const defaults = {
+                        family: { planId: 'family_pro', devicesAllowed: 3 },
+                        therapist: { planId: 'therapist', devicesAllowed: 15 },
+                        pie_school: { planId: 'pie_school', devicesAllowed: 35 }
+                      };
+                      setNewClient({
+                        ...newClient,
+                        type: newType,
+                        planId: defaults[newType]?.planId || 'family_pro',
+                        devicesAllowed: defaults[newType]?.devicesAllowed || 3
+                      });
+                    }}
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold"
                   >
                     <option value="family">Hogar / Familia</option>
@@ -1418,7 +1458,20 @@ export default function AdminDashboardView() {
                   <label className="font-bold text-slate-700 block mb-1">Plan Asignado:</label>
                   <select
                     value={newClient.planId}
-                    onChange={(e) => setNewClient({ ...newClient, planId: e.target.value })}
+                    onChange={(e) => {
+                      const newPlanId = e.target.value;
+                      const defaults = {
+                        family_pro: { type: 'family', devicesAllowed: 3 },
+                        therapist: { type: 'therapist', devicesAllowed: 15 },
+                        pie_school: { type: 'pie_school', devicesAllowed: 35 }
+                      };
+                      setNewClient({
+                        ...newClient,
+                        planId: newPlanId,
+                        type: defaults[newPlanId]?.type || 'family',
+                        devicesAllowed: defaults[newPlanId]?.devicesAllowed || 3
+                      });
+                    }}
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold"
                   >
                     <option value="family_pro">Plan Familiar Pro ($9.990)</option>

@@ -18,22 +18,22 @@ export default function QuickSearch({
   const inputRef = useRef(null);
 
   // Dynamic Landscape / Screen Height Detection
-  const [isCompactLandscape, setIsCompactLandscape] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const isLandscape = window.innerWidth > window.innerHeight;
-    return window.innerHeight <= 480 || (isLandscape && window.innerHeight <= 560);
-  });
-
   const [isLandscape, setIsLandscape] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.innerWidth > window.innerHeight;
+  });
+
+  const [isCompactLandscape, setIsCompactLandscape] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isLand = window.innerWidth > window.innerHeight;
+    return isLand && (window.innerHeight <= 520 || (typeof screen !== 'undefined' && screen.height <= 520));
   });
 
   useEffect(() => {
     const handleResize = () => {
       if (typeof window === 'undefined') return;
       const landscape = window.innerWidth > window.innerHeight;
-      const compact = window.innerHeight <= 480 || (landscape && window.innerHeight <= 560);
+      const compact = landscape && (window.innerHeight <= 520 || (typeof screen !== 'undefined' && screen.height <= 520));
       setIsLandscape(landscape);
       setIsCompactLandscape(compact);
     };
@@ -169,7 +169,7 @@ export default function QuickSearch({
             animate-in fade-in slide-in-from-top-2 duration-150
             ${isLandscape ? 'max-h-[50vh]' : 'max-h-[70vh]'}
             ${isCompactLandscape
-              ? 'fixed left-2 right-2 top-13 p-2 rounded-2xl'
+              ? 'fixed left-2 right-2 top-14 p-2 rounded-2xl'
               : 'absolute top-full left-0 right-0 mt-2 p-3 rounded-3xl no-scrollbar'}
           `}
         >

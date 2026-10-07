@@ -1,0 +1,37 @@
+{
+  "id": "comunicador-sin-limites",
+  "title": "Esta es mi voz sin límites - Comunicador CAA",
+  "category": "Salud, Accesibilidad & Neurodivergencia",
+  "featured": true,
+  "status": "production",
+  "liveUrl": "https://comunicador.agrolara.dedyn.io",
+  "githubUrl": "https://github.com/agrolara/comunicador",
+  "client": "Comunidad No Verbal & Fundación Sin Barreras",
+  "author": "Mauricio (Agrolara)",
+  "date": "2026-10-07",
+  "description": "Sistema de Comunicación Aumentativa y Alternativa (CAA) de alto impacto y motor háptico 3D para niños no verbales (TEA), con personalización biométrica de fotos reales, métricas de longitud de enunciado (LME) e inteligencia clínica fonoaudiológica.",
+  "technologies": [
+    "React 19",
+    "Vite",
+    "Tailwind CSS",
+    "PWA Offline",
+    "ARASAAC Catalog",
+    "Web Speech & Neural TTS",
+    "Docker Multi-Stage",
+    "Nginx Alpine",
+    "Coolify VPS",
+    "Canvas Image Optimizer"
+  ],
+  "architecture": {
+    "type": "PWA Mobile-First Client-Side SPA",
+    "runtime": "Nginx Alpine on Docker",
+    "hosting": "Coolify Cloud VPS (Oracle)",
+    "security": "Automated SSL Let's Encrypt + Traefik"
+  },
+  "clinicalHighlights": {
+    "semanticSystem": "Modified Fitzgerald Key (Color-Coded Syntax)",
+    "pedagogicalFramework": "Aided Language Stimulation (10 ALS Golden Rules)",
+    "metricsTracked": ["MLU / LME (Mean Length of Utterance)", "5D Pragmatic Functions", "Prompting Hierarchy Fading", "SMART Goals"],
+    "privacy": "100% Local Storage, No Third-Party Cloud Leaks"
+  }
+}

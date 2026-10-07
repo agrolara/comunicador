@@ -13,6 +13,7 @@ import PictogramEditorView from './views/PictogramEditorView';
 import TherapistDashboardView from './views/TherapistDashboardView';
 import AccessibilitySettingsView from './views/AccessibilitySettingsView';
 import ModelingGuideView from './views/ModelingGuideView';
+import AdminDashboardView from './views/AdminDashboardView';
 
 import { tts } from './services/tts';
 
@@ -308,6 +309,10 @@ export default function App() {
 
         {activeTab === 'guide' && (
           <ModelingGuideView />
+        )}
+
+        {activeTab === 'admin' && (
+          <AdminDashboardView />
         )}
       </main>
     </div>

@@ -17,6 +17,35 @@ export default function QuickSearch({
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Dynamic Landscape / Screen Height Detection
+  const [isCompactLandscape, setIsCompactLandscape] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isLandscape = window.innerWidth > window.innerHeight;
+    return window.innerHeight <= 480 || (isLandscape && window.innerHeight <= 560);
+  });
+
+  const [isLandscape, setIsLandscape] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth > window.innerHeight;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === 'undefined') return;
+      const landscape = window.innerWidth > window.innerHeight;
+      const compact = window.innerHeight <= 480 || (landscape && window.innerHeight <= 560);
+      setIsLandscape(landscape);
+      setIsCompactLandscape(compact);
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
+
   // Close when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -132,80 +161,167 @@ export default function QuickSearch({
         )}
       </div>
 
-      {/* Floating Results Panel */}
+      {/* Floating Results Panel - Dynamic Height & Adaptive Layout */}
       {isOpen && query.trim().length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-3xl border-2 border-[#004ac6] shadow-2xl p-3 z-50 max-h-[75vh] overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#e2e8f0] px-1">
-            <span className="text-[11px] font-black text-[#004ac6] uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#004ac6]" />
+        <div
+          className={`
+            bg-white border-2 border-[#004ac6] shadow-2xl z-50 overflow-y-auto
+            animate-in fade-in slide-in-from-top-2 duration-150
+            ${isLandscape ? 'max-h-[50vh]' : 'max-h-[70vh]'}
+            ${isCompactLandscape
+              ? 'fixed left-2 right-2 top-13 p-2 rounded-2xl'
+              : 'absolute top-full left-0 right-0 mt-2 p-3 rounded-3xl no-scrollbar'}
+          `}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#e2e8f0] px-1">
+            <span className="text-[10px] sm:text-[11px] font-black text-[#004ac6] uppercase tracking-wider flex items-center gap-1.5 truncate">
+              <Sparkles className="w-3.5 h-3.5 text-[#004ac6] shrink-0" />
               <span>Resultados para "{query}" ({results.length})</span>
             </span>
-            <span className="text-[10px] text-[#737686] font-bold">
-              Toca para hablar y agregar
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] sm:text-[10px] text-[#737686] font-bold hidden sm:inline">
+                Toca para hablar y agregar
+              </span>
+              {isCompactLandscape && (
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="p-1 rounded-lg text-slate-500 hover:bg-slate-100"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {results.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {results.map((item) => {
-                const effectiveText = textOverrides[item.id] || item.text;
-                const imgSrc = imageOverrides[item.id] || item.imageUrl || (item.arasaacId ? getArasaacImageUrl(item.arasaacId) : null);
-                const theme = FITZGERALD_COLORS[item.type] || FITZGERALD_COLORS.noun;
-                const isJustAdded = addedId === item.id;
+            isCompactLandscape ? (
+              /* Compact 2-row horizontally scrollable / compact grid for low-height mobile landscape */
+              <div className="grid grid-rows-2 grid-flow-col auto-cols-[140px] sm:auto-cols-[160px] gap-2 overflow-x-auto pb-1 pt-0.5">
+                {results.map((item) => {
+                  const effectiveText = textOverrides[item.id] || item.text;
+                  const imgSrc = imageOverrides[item.id] || item.imageUrl || (item.arasaacId ? getArasaacImageUrl(item.arasaacId) : null);
+                  const theme = FITZGERALD_COLORS[item.type] || FITZGERALD_COLORS.noun;
+                  const isJustAdded = addedId === item.id;
 
-                return (
-                  <button
-                    key={`${item.id}-${item.text}`}
-                    type="button"
-                    onClick={() => handleSelectPicto(item)}
-                    style={{
-                      backgroundColor: theme.bg,
-                      borderColor: theme.border
-                    }}
-                    className={`
-                      relative p-2 rounded-2xl border-2 text-center flex flex-col items-center justify-between cursor-pointer transition-all duration-75 active:scale-95 group
-                      ${isJustAdded ? 'ring-4 ring-emerald-400 scale-98 bg-emerald-50' : 'hover:shadow-md'}
-                    `}
-                  >
-                    {/* Badge if just added */}
-                    {isJustAdded && (
-                      <span className="absolute top-1 right-1 bg-emerald-600 text-white p-0.5 rounded-full text-[9px] shadow-sm flex items-center">
-                        <Check className="w-3 h-3 stroke-[3]" />
-                      </span>
-                    )}
-
-                    {/* Image */}
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl p-1 shadow-2xs flex items-center justify-center overflow-hidden mb-1">
-                      {imgSrc ? (
-                        <img
-                          src={imgSrc}
-                          alt={effectiveText}
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className="text-xl">🏷️</span>
-                      )}
-                    </div>
-
-                    {/* Label */}
-                    <span
-                      style={{ color: theme.text }}
-                      className="font-black text-[11px] leading-tight uppercase line-clamp-1 break-words w-full"
+                  return (
+                    <button
+                      key={`${item.id}-${item.text}`}
+                      type="button"
+                      onClick={() => handleSelectPicto(item)}
+                      style={{
+                        backgroundColor: theme.bg,
+                        borderColor: theme.border
+                      }}
+                      className={`
+                        relative px-2 py-1.5 rounded-xl border-2 text-left flex items-center gap-2 cursor-pointer
+                        transition-all duration-75 active:scale-95 shrink-0 select-none
+                        ${isJustAdded ? 'ring-2 ring-emerald-400 bg-emerald-50 scale-98' : 'hover:shadow-sm'}
+                      `}
                     >
-                      {effectiveText}
-                    </span>
+                      {/* Image */}
+                      <div className="w-9 h-9 bg-white rounded-lg p-0.5 shadow-2xs flex items-center justify-center overflow-hidden shrink-0">
+                        {imgSrc ? (
+                          <img
+                            src={imgSrc}
+                            alt={effectiveText}
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="text-base">🏷️</span>
+                        )}
+                      </div>
 
-                    {/* Category pill */}
-                    <span className="text-[8px] font-bold text-[#737686] truncate max-w-full mt-0.5 opacity-80">
-                      {item.category || item.type}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                      {/* Labels */}
+                      <div className="flex-1 min-w-0 pr-1">
+                        <span
+                          style={{ color: theme.text }}
+                          className="font-black text-[11px] leading-tight uppercase block truncate"
+                        >
+                          {effectiveText}
+                        </span>
+                        <span className="text-[8px] font-bold text-[#737686] truncate block opacity-80">
+                          {item.category || item.type}
+                        </span>
+                      </div>
+
+                      {/* Action status icon */}
+                      <span className="shrink-0">
+                        {isJustAdded ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5 text-slate-400 opacity-60" />
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Standard Responsive Grid for Vertical and Large Screens */
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {results.map((item) => {
+                  const effectiveText = textOverrides[item.id] || item.text;
+                  const imgSrc = imageOverrides[item.id] || item.imageUrl || (item.arasaacId ? getArasaacImageUrl(item.arasaacId) : null);
+                  const theme = FITZGERALD_COLORS[item.type] || FITZGERALD_COLORS.noun;
+                  const isJustAdded = addedId === item.id;
+
+                  return (
+                    <button
+                      key={`${item.id}-${item.text}`}
+                      type="button"
+                      onClick={() => handleSelectPicto(item)}
+                      style={{
+                        backgroundColor: theme.bg,
+                        borderColor: theme.border
+                      }}
+                      className={`
+                        relative p-2 rounded-2xl border-2 text-center flex flex-col items-center justify-between cursor-pointer transition-all duration-75 active:scale-95 group
+                        ${isJustAdded ? 'ring-4 ring-emerald-400 scale-98 bg-emerald-50' : 'hover:shadow-md'}
+                      `}
+                    >
+                      {/* Badge if just added */}
+                      {isJustAdded && (
+                        <span className="absolute top-1 right-1 bg-emerald-600 text-white p-0.5 rounded-full text-[9px] shadow-sm flex items-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+
+                      {/* Image */}
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl p-1 shadow-2xs flex items-center justify-center overflow-hidden mb-1">
+                        {imgSrc ? (
+                          <img
+                            src={imgSrc}
+                            alt={effectiveText}
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="text-xl">🏷️</span>
+                        )}
+                      </div>
+
+                      {/* Label */}
+                      <span
+                        style={{ color: theme.text }}
+                        className="font-black text-[11px] leading-tight uppercase line-clamp-1 break-words w-full"
+                      >
+                        {effectiveText}
+                      </span>
+
+                      {/* Category pill */}
+                      <span className="text-[8px] font-bold text-[#737686] truncate max-w-full mt-0.5 opacity-80">
+                        {item.category || item.type}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )
           ) : (
-            <div className="text-center py-6 text-slate-500">
+            <div className="text-center py-5 text-slate-500">
               <p className="text-xs font-bold">No encontramos pictogramas para "{query}"</p>
               <p className="text-[10px] text-slate-400 mt-1">
                 Puedes agregarlo como pictograma personalizado desde la pestaña <strong>Editor</strong>.

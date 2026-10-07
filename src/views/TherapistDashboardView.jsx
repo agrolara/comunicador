@@ -19,10 +19,12 @@ import {
   Plus,
   Minus,
   HelpCircle,
-  X
+  X,
+  Bot
 } from 'lucide-react';
 import { analytics } from '../services/analytics';
 import { tts } from '../services/tts';
+import { aiService } from '../services/ai';
 
 export default function TherapistDashboardView() {
   const [stats, setStats] = useState(analytics.getStats());
@@ -32,6 +34,13 @@ export default function TherapistDashboardView() {
   const [newGoalText, setNewGoalText] = useState('');
   const [newGoalTarget, setNewGoalTarget] = useState(5);
   const [isAddingGoal, setIsAddingGoal] = useState(false);
+
+  // AI Copilot States
+  const [showAiCopilotModal, setShowAiCopilotModal] = useState(false);
+  const [aiCopilotTab, setAiCopilotTab] = useState('report');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiOutput, setAiOutput] = useState('');
+  const [copiedAiOutput, setCopiedAiOutput] = useState(false);
 
   // Prompting Hierarchy Level state
   const [promptLevel, setPromptLevel] = useState(() => {
@@ -130,6 +139,72 @@ export default function TherapistDashboardView() {
     tts.speak('Informe de datos descargado');
   };
 
+  const handleGenerateAiReport = async () => {
+    setAiLoading(true);
+    setAiOutput('');
+    tts.playChime('pop');
+    try {
+      const res = await aiService.generateClinicalReport({
+        stats,
+        promptLevel,
+        patientName: 'Dante'
+      });
+      setAiOutput(res);
+      tts.playChime('success');
+    } catch (err) {
+      setAiOutput(`❌ Error al conectar con OpenRouter (Llama 3.3-70B): ${err.message}`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleGenerateAiStrategies = async () => {
+    setAiLoading(true);
+    setAiOutput('');
+    tts.playChime('pop');
+    try {
+      const res = await aiService.generateModelingStrategies({
+        stats,
+        topWords: stats.topWords || [],
+        userProfile: 'Dante'
+      });
+      setAiOutput(res);
+      tts.playChime('success');
+    } catch (err) {
+      setAiOutput(`❌ Error al conectar con OpenRouter (Llama 3.3-70B): ${err.message}`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleGenerateAiGoals = async () => {
+    setAiLoading(true);
+    setAiOutput('');
+    tts.playChime('pop');
+    try {
+      const res = await aiService.generateSmartGoalsPIE({
+        stats,
+        currentGoals: smartGoals,
+        studentName: 'Dante'
+      });
+      setAiOutput(res);
+      tts.playChime('success');
+    } catch (err) {
+      setAiOutput(`❌ Error al conectar con OpenRouter (Llama 3.3-70B): ${err.message}`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleCopyAiOutput = () => {
+    if (!aiOutput) return;
+    navigator.clipboard.writeText(aiOutput).then(() => {
+      setCopiedAiOutput(true);
+      tts.playChime('success');
+      setTimeout(() => setCopiedAiOutput(false), 2500);
+    });
+  };
+
   const generateClinicalReportText = () => {
     const dateStr = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
     const promptNames = {
@@ -225,6 +300,17 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
           >
             <FileText className="w-4 h-4 text-teal-700" />
             <span>Generar Informe Clínico</span>
+          </button>
+          <button
+            onClick={() => {
+              setShowAiCopilotModal(true);
+              tts.playChime('pop');
+            }}
+            type="button"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-2xl font-black text-xs cursor-pointer shadow-xs active:scale-95 transition-all"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+            <span>Copiloto IA (Llama 3.3)</span>
           </button>
           <button
             onClick={handleExportJSON}
@@ -746,6 +832,171 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
               >
                 {copiedReport ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4 text-white" />}
                 <span>{copiedReport ? '¡Informe Copiado al Portapapeles!' : 'Copiar Informe para WhatsApp / Ficha'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Clinical Copilot Modal (OpenRouter LLaMA 3.3-70B) */}
+      {showAiCopilotModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border-2 border-slate-200 max-w-3xl w-full p-5 md:p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base md:text-lg flex items-center gap-2">
+                    <span>Copiloto IA Clínico</span>
+                    <span className="text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                      Meta LLaMA 3.3 (70B)
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Asistente de redacción fonoaudiológica, modelado ALS y metas SMART para el decreto escolar PIE
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAiCopilotModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Sub-tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <button
+                type="button"
+                onClick={() => { setAiCopilotTab('report'); setAiOutput(''); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black cursor-pointer transition-all ${
+                  aiCopilotTab === 'report' ? 'bg-teal-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                1. Informe de Avance Fonoaudiológico
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAiCopilotTab('strategies'); setAiOutput(''); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black cursor-pointer transition-all ${
+                  aiCopilotTab === 'strategies' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                2. Estrategias de Modelado ALS
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAiCopilotTab('goals'); setAiOutput(''); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black cursor-pointer transition-all ${
+                  aiCopilotTab === 'goals' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                3. Metas SMART para Decreto PIE
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto space-y-4 text-xs pr-1">
+              {aiCopilotTab === 'report' && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-teal-50 border border-teal-200 rounded-2xl flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <span className="font-bold text-teal-950 block">Redacción formal de informe evolutivo</span>
+                      <span className="text-[11px] text-teal-800">
+                        Sintetiza LME actual ({stats.mlu}), desglose pragmático y nivel de prompting actual ({promptLevel}).
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleGenerateAiReport}
+                      disabled={aiLoading}
+                      type="button"
+                      className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-black text-xs cursor-pointer shadow-xs active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 ${aiLoading ? 'animate-spin' : ''}`} />
+                      <span>{aiLoading ? 'Redactando con Llama 3.3...' : 'Generar Informe con IA'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {aiCopilotTab === 'strategies' && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <span className="font-bold text-amber-950 block">Estrategias de Modelado Asistido (ALS)</span>
+                      <span className="text-[11px] text-amber-800">
+                        Guiones de interacción para expandir a 2 palabras e incrementar rechazo funcional en el hogar y aula.
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleGenerateAiStrategies}
+                      disabled={aiLoading}
+                      type="button"
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-black text-xs cursor-pointer shadow-xs active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 ${aiLoading ? 'animate-spin' : ''}`} />
+                      <span>{aiLoading ? 'Generando Estrategias...' : 'Sugerir Guiones con IA'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {aiCopilotTab === 'goals' && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-2xl flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <span className="font-bold text-purple-950 block">Objetivos SMART para Decreto 170 / 83 PIE</span>
+                      <span className="text-[11px] text-purple-800">
+                        Metas medibles con criterios de logro y temporalidad para informes de evaluación escolar.
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleGenerateAiGoals}
+                      disabled={aiLoading}
+                      type="button"
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black text-xs cursor-pointer shadow-xs active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 ${aiLoading ? 'animate-spin' : ''}`} />
+                      <span>{aiLoading ? 'Diseñando Metas...' : 'Proponer Metas con IA'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Output Display */}
+              {aiOutput && (
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-slate-700 uppercase tracking-wider text-[11px]">
+                      Resultado Clínico:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyAiOutput}
+                      className="flex items-center gap-1 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold cursor-pointer"
+                    >
+                      {copiedAiOutput ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedAiOutput ? 'Copiado' : 'Copiar Texto'}</span>
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl font-mono text-xs text-slate-800 whitespace-pre-wrap leading-relaxed select-all max-h-72 overflow-y-auto">
+                    {aiOutput}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAiCopilotModal(false)}
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black text-xs cursor-pointer shadow-xs"
+              >
+                Cerrar
               </button>
             </div>
           </div>

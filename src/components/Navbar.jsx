@@ -9,7 +9,8 @@ import {
   PlusCircle,
   Sliders,
   BarChart3,
-  HelpCircle
+  HelpCircle,
+  ShieldCheck
 } from 'lucide-react';
 import { tts } from '../services/tts';
 import QuickSearch from './QuickSearch';
@@ -102,6 +103,21 @@ export default function Navbar({
           >
             <HelpCircle className="w-4 h-4" />
             <span className="hidden sm:inline">Guía CAA</span>
+          </button>
+
+          <button
+            onClick={() => handleSelectTab('admin')}
+            type="button"
+            className={`
+              flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all
+              ${activeTab === 'admin' 
+                ? 'bg-[#312e81] text-white shadow-xs' 
+                : 'bg-[#e0e7ff] text-[#3730a3] hover:bg-[#c7d2fe]'}
+            `}
+            title="Panel Administrador y Gestión de Clientes"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span className="hidden sm:inline">Panel Administrador</span>
           </button>
         </div>
       </header>

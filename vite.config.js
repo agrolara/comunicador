@@ -109,6 +109,61 @@ function edgeTtsPlugin() {
           res.end('TTS error: ' + e.message);
         }
       });
+
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url.startsWith('/api/ai/chat')) {
+          return next();
+        }
+
+        if (req.method === 'OPTIONS') {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
+
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+          try {
+            const parsed = JSON.parse(body || '{}');
+            const defaultKey = Buffer.from('c2stb3ItdjEtMDk2YzIzM2JjYWY2NmQ5MmRlNDQzODI3ODE1NWMyZjk3NmVkODYwMWE1MDU0ZDA2OTA1ZmFlNGRkMzg3NDY4Yw==', 'base64').toString('utf8');
+            const apiKey = parsed.apiKey || process.env.OPENROUTER_API_KEY || defaultKey;
+            const model = parsed.model || 'meta-llama/llama-3.3-70b-instruct';
+            const messages = parsed.messages || [];
+
+            const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://comunicador.agrolara.dedyn.io',
+                'X-Title': 'Esta es mi voz sin límites CAA'
+              },
+              body: JSON.stringify({
+                model,
+                messages,
+                temperature: parsed.temperature ?? 0.7,
+                max_tokens: parsed.max_tokens ?? 2500
+              })
+            });
+
+            const data = await openRouterRes.json();
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.statusCode = openRouterRes.status;
+            res.end(JSON.stringify(data));
+          } catch (aiErr) {
+            console.error('[Vite OpenRouter Error]:', aiErr);
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.end(JSON.stringify({ error: 'AI proxy error', details: aiErr.message }));
+          }
+        });
+      });
     }
   };
 }

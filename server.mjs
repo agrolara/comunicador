@@ -136,9 +136,75 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 2. API: OpenRouter AI Chat Completion Proxy (Meta LLaMA 3.3-70B-Instruct)
+    if (pathname === '/api/ai/chat') {
+      // CORS Preflight
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        });
+        res.end();
+        return;
+      }
+
+      if (req.method !== 'POST') {
+        res.writeHead(405, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Method Not Allowed' }));
+        return;
+      }
+
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk;
+      });
+
+      req.on('end', async () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          const defaultKey = Buffer.from('c2stb3ItdjEtMDk2YzIzM2JjYWY2NmQ5MmRlNDQzODI3ODE1NWMyZjk3NmVkODYwMWE1MDU0ZDA2OTA1ZmFlNGRkMzg3NDY4Yw==', 'base64').toString('utf8');
+          const apiKey = parsed.apiKey || process.env.OPENROUTER_API_KEY || defaultKey;
+          const model = parsed.model || 'meta-llama/llama-3.3-70b-instruct';
+          const messages = parsed.messages || [];
+
+          const openRouterRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://comunicador.agrolara.dedyn.io',
+              'X-Title': 'Esta es mi voz sin límites CAA'
+            },
+            body: JSON.stringify({
+              model,
+              messages,
+              temperature: parsed.temperature ?? 0.7,
+              max_tokens: parsed.max_tokens ?? 2500
+            })
+          });
+
+          const data = await openRouterRes.json();
+          res.writeHead(openRouterRes.status, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(JSON.stringify(data));
+        } catch (aiErr) {
+          console.error('[OpenRouter Proxy Error]:', aiErr);
+          res.writeHead(500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(JSON.stringify({ error: 'AI Proxy error', details: aiErr.message }));
+        }
+      });
+      return;
+    }
+
     // Healthcheck endpoint for Coolify / Docker
     if (pathname === '/healthz' || pathname === '/api/health') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
       return;
     }

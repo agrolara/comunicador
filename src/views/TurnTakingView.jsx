@@ -63,7 +63,7 @@ export default function TurnTakingView({ onAddToSentence, cardSize, highContrast
   const progressPercent = Math.round(((totalSeconds - timerSeconds) / totalSeconds) * 100);
 
   return (
-    <div className="p-3 md:p-6 max-w-5xl mx-auto space-y-6 pb-24">
+    <div className="p-3 md:p-6 max-w-5xl mx-auto space-y-6 pb-36 sm:pb-40 md:pb-48">
       {/* Banner */}
       <div className="bg-[#784b00] text-white p-5 rounded-3xl shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">

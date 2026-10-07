@@ -194,7 +194,7 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
   const pragmaticTotal = (stats.pragmatic?.peticion || 0) + (stats.pragmatic?.rechazo || 0) + (stats.pragmatic?.emocion || 0) + (stats.pragmatic?.social || 0) + (stats.pragmatic?.urgencia || 0) || 1;
 
   return (
-    <div className="p-3 md:p-6 max-w-6xl mx-auto space-y-6 pb-24">
+    <div className="p-3 md:p-6 max-w-6xl mx-auto space-y-6 pb-36 sm:pb-40 md:pb-48">
       {/* Banner */}
       <div className="bg-gradient-to-r from-teal-700 to-emerald-700 text-white p-5 md:p-6 rounded-3xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">

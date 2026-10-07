@@ -173,17 +173,28 @@ export default function App() {
     }
   };
 
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  const handleNavigateToCategory = (catId = 'all') => {
+    setSelectedCategory(catId);
+    setActiveTab('categories');
+  };
+
   return (
     <div className={`min-h-screen flex flex-col bg-[#f9f9ff] text-[#111c2d] ${getFontFamilyClass()} ${highContrast ? 'high-contrast' : ''}`}>
-      {/* Top App Bar & Bottom Navigation Material 3 */}
+      {/* Top App Bar con Buscador Rápido y Bottom Navigation Material 3 */}
       <Navbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         highContrast={highContrast}
+        onAddToSentence={handleAddToSentence}
+        imageOverrides={imageOverrides}
+        textOverrides={textOverrides}
+        customPictograms={customPictograms}
       />
 
-      {/* Persistent Sentence Bar (always accessible across communication tabs) */}
-      {['main', 'categories', 'pain', 'turns'].includes(activeTab) && (
+      {/* Persistent Sentence Bar (accesible siempre que haya frase o en pestañas de comunicación) */}
+      {(sentenceItems.length > 0 || ['main', 'categories', 'pain', 'turns'].includes(activeTab)) && (
         <SentenceBar
           items={sentenceItems}
           onRemoveItem={handleRemoveSentenceItem}
@@ -194,8 +205,8 @@ export default function App() {
         />
       )}
 
-      {/* Main Content Area */}
-      <main className="flex-1">
+      {/* Main Content Area con espacio inferior generoso para que nada quede oculto tras la barra de navegación */}
+      <main className="flex-1 pb-36 sm:pb-40 md:pb-48">
         {activeTab === 'main' && (
           <MainBoardView
             onAddToSentence={handleAddToSentence}
@@ -208,6 +219,7 @@ export default function App() {
             textOverrides={textOverrides}
             customPictograms={customPictograms}
             onNavigateTab={setActiveTab}
+            onNavigateCategory={handleNavigateToCategory}
           />
         )}
 
@@ -222,6 +234,8 @@ export default function App() {
             imageOverrides={imageOverrides}
             textOverrides={textOverrides}
             customPictograms={customPictograms}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
           />
         )}
 

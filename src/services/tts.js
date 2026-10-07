@@ -72,7 +72,10 @@ class TTSService {
   setProfile(profile) {
     if (profile === 'femenina') profile = 'catalina';
     if (profile === 'masculina') profile = 'jorge';
-    this.voiceProfile = profile;
+    if (this.voiceProfile !== profile) {
+      this.voiceProfile = profile;
+      this.audioCache.clear();
+    }
   }
 
   getProfileConfig() {
@@ -199,6 +202,74 @@ class TTSService {
     }
   }
 
+  getLocalVoiceConfig() {
+    const profile = this.voiceProfile;
+    switch (profile) {
+      case 'catalina':
+        return {
+          lang: 'es-CL',
+          pitch: 1.05,
+          rate: 0.95,
+          preferredNames: ['Catalina', 'Chile', 'Francisca', 'Sabina', 'Helena', 'Monica', 'Laura', 'Female']
+        };
+      case 'lorenzo':
+        return {
+          lang: 'es-CL',
+          pitch: 0.92,
+          rate: 0.95,
+          preferredNames: ['Lorenzo', 'Chile', 'Pablo', 'Diego', 'Jorge', 'Raul', 'Male']
+        };
+      case 'infantil': // Paloma
+        return {
+          lang: 'es-US',
+          pitch: 1.45,
+          rate: 1.05,
+          preferredNames: ['Paloma', 'Zira', 'Paulina', 'Child', 'Google']
+        };
+      case 'dalia':
+        return {
+          lang: 'es-MX',
+          pitch: 1.0,
+          rate: 0.95,
+          preferredNames: ['Dalia', 'Paulina', 'Mexico', 'Hilda', 'Sabina']
+        };
+      case 'jorge':
+        return {
+          lang: 'es-MX',
+          pitch: 0.72,
+          rate: 0.88,
+          preferredNames: ['Jorge', 'Raul', 'Carlos', 'Pablo', 'David']
+        };
+      case 'alonso':
+        return {
+          lang: 'es-US',
+          pitch: 1.05,
+          rate: 1.05,
+          preferredNames: ['Alonso', 'Diego', 'Miguel', 'David']
+        };
+      default:
+        return {
+          lang: 'es-CL',
+          pitch: 1.0,
+          rate: 0.95,
+          preferredNames: []
+        };
+    }
+  }
+
+  resolveLocalVoice(voices, config) {
+    if (!voices || voices.length === 0) return null;
+    const esVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('es'));
+    const candidatePool = esVoices.length > 0 ? esVoices : voices;
+
+    for (const name of config.preferredNames) {
+      const match = candidatePool.find(v => v.name.toLowerCase().includes(name.toLowerCase()));
+      if (match) return match;
+    }
+
+    return candidatePool[0];
+  }
+
   // Fallback sentence speaker using Web Speech API
   speakSentenceLocal(items, onHighlight = null, onComplete = null) {
     if (!this.synth || !items || items.length === 0) return;
@@ -206,14 +277,14 @@ class TTSService {
 
     const fullText = items.map(item => item.text).join(' ');
     const utterance = new SpeechSynthesisUtterance(fullText);
-    utterance.lang = 'es-CL';
-    utterance.rate = 0.95;
+    const localConfig = this.getLocalVoiceConfig();
+    utterance.lang = localConfig.lang;
+    utterance.rate = localConfig.rate;
+    utterance.pitch = localConfig.pitch;
 
-    const voices = this.synth.getVoices().filter(v => v.lang.startsWith('es'));
-    if (voices.length > 0) {
-      const preferred = voices.find(v => v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Chile')) || voices[0];
-      utterance.voice = preferred;
-    }
+    const voices = this.synth.getVoices();
+    const matched = this.resolveLocalVoice(voices, localConfig);
+    if (matched) utterance.voice = matched;
 
     // Rough visual sync
     let currentIndex = 0;
@@ -250,15 +321,14 @@ class TTSService {
     this.synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'es-CL';
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
+    const localConfig = this.getLocalVoiceConfig();
+    utterance.lang = localConfig.lang;
+    utterance.rate = localConfig.rate;
+    utterance.pitch = localConfig.pitch;
 
-    const voices = this.synth.getVoices().filter(v => v.lang.startsWith('es'));
-    if (voices.length > 0) {
-      const preferred = voices.find(v => v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Catalina') || v.name.includes('Chile')) || voices[0];
-      utterance.voice = preferred;
-    }
+    const voices = this.synth.getVoices();
+    const matched = this.resolveLocalVoice(voices, localConfig);
+    if (matched) utterance.voice = matched;
 
     if (onEnd) utterance.onend = onEnd;
     this.synth.speak(utterance);

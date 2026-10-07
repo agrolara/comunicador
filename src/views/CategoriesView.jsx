@@ -44,10 +44,21 @@ export default function CategoriesView({
   textCase = 'uppercase',
   imageOverrides = {},
   textOverrides = {},
-  customPictograms = []
+  customPictograms = [],
+  selectedCategory: externalCategory = 'all',
+  onSelectCategory = null
 }) {
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [internalCategory, setInternalCategory] = useState(externalCategory);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const currentCategory = onSelectCategory ? externalCategory : internalCategory;
+  const handleSelectCat = (catId) => {
+    if (onSelectCategory) {
+      onSelectCategory(catId);
+    } else {
+      setInternalCategory(catId);
+    }
+  };
 
   const categories = [
     { id: 'all', label: 'TODOS', icon: HeartHandshake, bg: 'bg-[#dbe1ff]', text: 'text-[#004ac6]', matchCategory: null, items: [] },
@@ -88,10 +99,10 @@ export default function CategoriesView({
   const allItems = [...allPresetItems, ...customPictograms];
 
   let displayItems = [];
-  if (selectedCategory === 'all') {
+  if (currentCategory === 'all') {
     displayItems = allItems;
   } else {
-    const foundCat = categories.find(c => c.id === selectedCategory);
+    const foundCat = categories.find(c => c.id === currentCategory);
     if (foundCat) {
       // Find preset items + custom pictograms belonging to this category
       const customMatches = customPictograms.filter(p => p.category === foundCat.matchCategory);
@@ -132,7 +143,7 @@ export default function CategoriesView({
   };
 
   return (
-    <div className="p-3 md:p-6 max-w-7xl mx-auto space-y-5 pb-24">
+    <div className="p-3 md:p-6 max-w-7xl mx-auto space-y-5 pb-36 sm:pb-40 md:pb-48">
       {/* Search and Material 3 Filter Chips */}
       <div className="flex flex-col sm:flex-row items-center gap-3">
         {/* Search Input */}
@@ -151,13 +162,13 @@ export default function CategoriesView({
         <div className="flex items-center gap-2 overflow-x-auto w-full pb-1 scrollbar-none">
           {categories.map((cat) => {
             const Icon = cat.icon;
-            const isSelected = selectedCategory === cat.id && searchQuery === '';
+            const isSelected = currentCategory === cat.id && searchQuery === '';
 
             return (
               <button
                 key={cat.id}
                 onClick={() => {
-                  setSelectedCategory(cat.id);
+                  handleSelectCat(cat.id);
                   setSearchQuery('');
                 }}
                 type="button"

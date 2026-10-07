@@ -11,12 +11,20 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Production static server with Nginx
-FROM nginx:alpine AS runner
+# Production runner with Node.js 20 to support real Edge-TTS neural voices backend
+FROM node:20-alpine AS runner
 
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=80
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY server.mjs ./
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "server.mjs"]

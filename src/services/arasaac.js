@@ -44,3 +44,4 @@ class ArasaacService {
 }
 
 export const arasaac = new ArasaacService();
+export const getArasaacImageUrl = (id, resolution = 300) => arasaac.getImageUrl(id, resolution);

@@ -58,7 +58,7 @@ export default function RoutinesView() {
   const progressPercent = Math.round((completedCount / currentRoutine.items.length) * 100);
 
   return (
-    <div className="p-3 md:p-6 max-w-5xl mx-auto space-y-6 pb-24">
+    <div className="p-3 md:p-6 max-w-5xl mx-auto space-y-6 pb-36 sm:pb-40 md:pb-48">
       {/* Banner Stitch */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#004ac6] text-white p-5 rounded-3xl shadow-sm">
         <div className="flex items-center gap-3">

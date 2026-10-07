@@ -96,7 +96,7 @@ export default function AccessibilitySettingsView({
   };
 
   return (
-    <div className="p-3 md:p-6 max-w-5xl mx-auto space-y-6 pb-24">
+    <div className="p-3 md:p-6 max-w-5xl mx-auto space-y-6 pb-36 sm:pb-40 md:pb-48">
       {/* Banner Stitch */}
       <div className="bg-[#111c2d] text-white p-5 rounded-3xl shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -371,6 +371,7 @@ export default function AccessibilitySettingsView({
           </div>
         </div>
       </div>
+      <div className="h-16 md:h-24" aria-hidden="true" />
     </div>
   );
 }

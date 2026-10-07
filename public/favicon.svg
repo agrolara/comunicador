@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <rect width="100" height="100" rx="24" fill="#3B82F6"/>
+  <circle cx="50" cy="40" r="20" fill="#FEF08A"/>
+  <circle cx="43" cy="36" r="3" fill="#1E293B"/>
+  <circle cx="57" cy="36" r="3" fill="#1E293B"/>
+  <path d="M43 45 Q50 52 57 45" stroke="#1E293B" stroke-width="3" stroke-linecap="round"/>
+  <rect x="25" y="65" width="50" height="18" rx="9" fill="#FFFFFF"/>
+  <text x="50" y="78" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1D4ED8" text-anchor="middle">CAA</text>
+</svg>

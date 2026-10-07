@@ -1,0 +1,16 @@
+{
+  "short_name": "Esta es mi voz",
+  "name": "Esta es mi voz sin límites - Comunicación Aumentativa",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F8FAFC",
+  "theme_color": "#3B82F6",
+  "display": "standalone",
+  "orientation": "landscape-primary"
+}

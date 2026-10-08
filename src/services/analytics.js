@@ -197,6 +197,11 @@ class AnalyticsService {
       if (textOver) backup.textOverrides = JSON.parse(textOver);
     } catch (e) {}
 
+    try {
+      const core = localStorage.getItem('danmax_configured_core');
+      if (core) backup.configuredCore = JSON.parse(core);
+    } catch (e) {}
+
     backup.settings = {
       gridSize: localStorage.getItem('danmax_grid_size') || '4x4',
       fontFamily: localStorage.getItem('danmax_font_family') || 'atkinson',
@@ -206,7 +211,8 @@ class AnalyticsService {
       voiceProfile: localStorage.getItem('danmax_voice_profile') || 'catalina',
       highContrast: localStorage.getItem('danmax_high_contrast') === 'true',
       cardSize: localStorage.getItem('danmax_card_size') || 'md',
-      speakOnTap: localStorage.getItem('danmax_speak_on_tap') !== 'false'
+      speakOnTap: localStorage.getItem('danmax_speak_on_tap') !== 'false',
+      guidedMode: localStorage.getItem('danmax_guided_mode') !== 'false'
     };
 
     return backup;
@@ -230,6 +236,10 @@ class AnalyticsService {
       localStorage.setItem('danmax_text_overrides', JSON.stringify(backupObject.textOverrides));
     }
 
+    if (backupObject.configuredCore) {
+      localStorage.setItem('danmax_configured_core', JSON.stringify(backupObject.configuredCore));
+    }
+
     if (backupObject.settings) {
       const s = backupObject.settings;
       if (s.gridSize) localStorage.setItem('danmax_grid_size', s.gridSize);
@@ -241,6 +251,7 @@ class AnalyticsService {
       if (s.highContrast !== undefined) localStorage.setItem('danmax_high_contrast', String(s.highContrast));
       if (s.cardSize) localStorage.setItem('danmax_card_size', s.cardSize);
       if (s.speakOnTap !== undefined) localStorage.setItem('danmax_speak_on_tap', String(s.speakOnTap));
+      if (s.guidedMode !== undefined) localStorage.setItem('danmax_guided_mode', String(s.guidedMode));
     }
 
     if (backupObject.analytics) {

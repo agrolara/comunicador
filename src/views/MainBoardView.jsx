@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import PictoCard from '../components/PictoCard';
+import CoreVocabularyConfigModal from '../components/CoreVocabularyConfigModal';
 import {
   CORE_PICTOGRAMS,
   FOOD_PICTOGRAMS,
@@ -30,7 +31,12 @@ import {
   Sprout,
   MessageCircle,
   GraduationCap,
-  Car
+  Car,
+  Settings2,
+  Compass,
+  CheckCircle2,
+  HelpCircle,
+  Volume2
 } from 'lucide-react';
 import { tts } from '../services/tts';
 import { analytics } from '../services/analytics';
@@ -45,25 +51,56 @@ export default function MainBoardView({
   imageOverrides = {},
   textOverrides = {},
   customPictograms = [],
+  sentenceItems = [],
+  guidedMode = true,
+  onToggleGuidedMode,
   onNavigateTab,
   onNavigateCategory
 }) {
-  // 1. Core Vocabulary: 'YO' is always 1st, 'QUIERO' is always 2nd, the rest sort dynamically by user usage!
+  // 1. Configured Core Vocabulary by Parent/Therapist (persisted in localStorage)
+  const [configuredCore, setConfiguredCore] = useState(() => {
+    try {
+      const saved = localStorage.getItem('danmax_configured_core');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
+  // Custom User Pictograms tagged as Core
   const customCore = useMemo(() => 
     customPictograms.filter(p => p.category === 'Vocabulario Núcleo' || p.category === 'Núcleo'),
     [customPictograms]
   );
+
+  // Active Core List: if tutor configured one, use that curation; otherwise fallback to default + usage sorting
   const sortedCore = useMemo(() => {
+    if (configuredCore && configuredCore.length > 0) {
+      return configuredCore;
+    }
     const allCore = [...CORE_PICTOGRAMS, ...customCore];
     return analytics.sortByUsage(allCore, 2);
-  }, [customCore]);
+  }, [configuredCore, customCore]);
 
   // Preload core audio in background for instant speech
   useEffect(() => {
-    sortedCore.forEach(item => tts.preload(item.text));
-  }, [sortedCore]);
+    sortedCore.forEach(item => {
+      const txt = (textOverrides && textOverrides[item.id]) || item.text;
+      tts.preload(txt);
+    });
+  }, [sortedCore, textOverrides]);
 
-  // 2. Definición exhaustiva de TODAS LAS CATEGORÍAS EXISTENTES
+  // Save new configured core
+  const handleSaveConfiguredCore = (newCoreList) => {
+    setConfiguredCore(newCoreList);
+    try {
+      localStorage.setItem('danmax_configured_core', JSON.stringify(newCoreList));
+    } catch (e) {}
+  };
+
+  // 2. Comprehensive catalog of all pictograms across all categories for modal configuration
   const ALL_BOARD_CATEGORIES = useMemo(() => [
     {
       id: 'food',
@@ -171,7 +208,35 @@ export default function MainBoardView({
     }
   ], []);
 
-  // Para cada categoría, calcula de forma independiente los 4 pictogramas más usados por este usuario
+  // Combined pool for the core configurator modal
+  const allAvailablePictograms = useMemo(() => {
+    const list = [
+      ...CORE_PICTOGRAMS,
+      ...FOOD_PICTOGRAMS,
+      ...ACTIONS_PICTOGRAMS,
+      ...EMOTIONS_PICTOGRAMS,
+      ...PAIN_URGENCY_PICTOGRAMS,
+      ...PLAY_TURNS_PICTOGRAMS,
+      ...PEOPLE_PICTOGRAMS,
+      ...PLACES_PICTOGRAMS,
+      ...CLOTHES_PICTOGRAMS,
+      ...HYGIENE_PICTOGRAMS,
+      ...ANIMALS_NATURE_PICTOGRAMS,
+      ...SOCIAL_PICTOGRAMS,
+      ...SCHOOL_PICTOGRAMS,
+      ...VEHICLES_PICTOGRAMS,
+      ...customPictograms
+    ];
+    const seen = new Set();
+    return list.filter(item => {
+      const key = `${item.id || item.text}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [customPictograms]);
+
+  // Categories with top 4 most used pictograms
   const categoriesWithTop4 = useMemo(() => {
     return ALL_BOARD_CATEGORIES.map(cat => {
       const customMatches = customPictograms.filter(p => 
@@ -179,7 +244,6 @@ export default function MainBoardView({
         (p.category && p.category.toLowerCase().includes(cat.id.toLowerCase()))
       );
       const allCategoryItems = [...cat.items, ...customMatches];
-      // Ordenamiento dinámico individual por frecuencia de uso
       const sorted = analytics.sortByUsage(allCategoryItems, 0);
       const top4 = sorted.slice(0, 4);
 
@@ -191,7 +255,104 @@ export default function MainBoardView({
     });
   }, [ALL_BOARD_CATEGORIES, customPictograms]);
 
-  // Navegación rápida hacia la categoría seleccionada
+  // 3. Guided Learning Mode Step Logic (Scaffolding: YO -> QUIERO -> OBJETO/COMIDA -> HABLAR)
+  const guidedStepInfo = useMemo(() => {
+    if (!guidedMode) return null;
+
+    const count = sentenceItems.length;
+    if (count === 0) {
+      return {
+        step: 1,
+        stepTotal: 4,
+        badge: 'PASO 1 DE 4',
+        title: '¿Quién habla?',
+        instruction: 'Toca el pictograma "YO"',
+        targetType: 'starter',
+        color: 'from-amber-500 to-yellow-500'
+      };
+    }
+
+    const firstItem = sentenceItems[0];
+    const firstText = ((textOverrides && textOverrides[firstItem.id]) || firstItem.text || '').toUpperCase().trim();
+    const lastItem = sentenceItems[count - 1];
+    const lastText = ((textOverrides && textOverrides[lastItem.id]) || lastItem.text || '').toUpperCase().trim();
+
+    // Step 2: "YO" is picked -> Prompt for "QUIERO" or desire/action verb
+    if (count === 1 && (firstText === 'YO' || firstItem.type === 'pronoun')) {
+      return {
+        step: 2,
+        stepTotal: 4,
+        badge: 'PASO 2 DE 4',
+        title: '¿Qué necesitas o deseas?',
+        instruction: 'Toca "QUIERO" o una acción (Comer, Jugar, Ir al baño)',
+        targetType: 'desire',
+        color: 'from-blue-600 to-indigo-600'
+      };
+    }
+
+    // Step 3: Desire or verb chosen -> Prompt for desired noun / snack / toy
+    const isDesireOrVerb = [
+      'QUIERO', 'NO QUIERO', 'DAME', 'COMER', 'BEBER', 'JUGAR', 'IR AL BAÑO', 'AYUDA', 'VER'
+    ].includes(lastText) || lastItem.type === 'verb' || lastItem.category === 'Acciones';
+
+    if (isDesireOrVerb && count < 3) {
+      return {
+        step: 3,
+        stepTotal: 4,
+        badge: 'PASO 3 DE 4',
+        title: '¿Qué deseas exactamente?',
+        instruction: 'Elige tu pictograma (ej. Chocolate, Agua, Galleta, Tablet)',
+        targetType: 'object',
+        color: 'from-emerald-500 to-teal-600'
+      };
+    }
+
+    // Step 4: Sentence is complete!
+    return {
+      step: 4,
+      stepTotal: 4,
+      badge: '¡FRASE LISTA! 🎉',
+      title: '¡Muy bien!',
+      instruction: 'Toca el botón verde "HABLAR" arriba para que todos te escuchen',
+      targetType: 'speak',
+      color: 'from-purple-600 to-pink-600'
+    };
+  }, [guidedMode, sentenceItems, textOverrides]);
+
+  // Check if a specific card should be highlighted in Guided Mode
+  const isCardGuidedTarget = (item) => {
+    if (!guidedMode || !guidedStepInfo) return false;
+    const itemText = ((textOverrides && textOverrides[item.id]) || item.text || '').toUpperCase().trim();
+
+    if (guidedStepInfo.targetType === 'starter') {
+      return itemText === 'YO' || item.type === 'pronoun';
+    }
+
+    if (guidedStepInfo.targetType === 'desire') {
+      return itemText === 'QUIERO' || 
+             itemText === 'COMER' || 
+             itemText === 'BEBER' || 
+             itemText === 'JUGAR' || 
+             itemText === 'IR AL BAÑO' || 
+             itemText === 'AYUDA' || 
+             itemText === 'DAME';
+    }
+
+    if (guidedStepInfo.targetType === 'object') {
+      // Highlight high-interest snacks, foods, toys and objects
+      const highInterest = [
+        'CHOCOLATE', 'AGUA', 'GALLETA', 'PAN', 'TABLET', 'PELOTA',
+        'MANZANA', 'LECHE', 'JUGUETE', 'MÁS', 'DORMIR', 'PAPAS FRITAS', 'JUICE', 'JUGO'
+      ];
+      return highInterest.includes(itemText) || 
+             item.type === 'noun' || 
+             item.category === 'Comida y Bebida' || 
+             item.category === 'Juguetes y Objetos';
+    }
+
+    return false;
+  };
+
   const handleOpenCategory = (categoryId) => {
     if (onNavigateCategory) {
       onNavigateCategory(categoryId);
@@ -219,19 +380,121 @@ export default function MainBoardView({
   };
 
   return (
-    <div className="p-3 md:p-6 max-w-7xl mx-auto space-y-6 pb-36 sm:pb-40 md:pb-48">
+    <div className="p-3 md:p-6 max-w-7xl mx-auto space-y-5 pb-36 sm:pb-40 md:pb-48">
+      {/* 0. Guided Learning Mode Banner (Modelado Asistido / Scaffolding) */}
+      <section className={`
+        rounded-3xl border-2 p-3 sm:p-4 shadow-sm transition-all
+        ${guidedMode 
+          ? 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-300' 
+          : 'bg-slate-50 border-slate-200'}
+      `}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`
+              w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm
+              ${guidedMode ? 'bg-amber-500 text-white animate-pulse' : 'bg-slate-300 text-slate-600'}
+            `}>
+              <Compass className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5">
+                  <span>Modo Guía de Aprendizaje</span>
+                  {guidedMode && (
+                    <span className="bg-amber-200 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Activo
+                    </span>
+                  )}
+                </h2>
+              </div>
+              <p className="text-xs text-slate-600 font-medium mt-0.5">
+                {guidedMode 
+                  ? 'Resalta de forma predictiva los pictogramas para estructurar frases con sentido (Yo ➔ Quiero ➔ Chocolate ➔ Hablar).'
+                  : 'Modo exploración libre activo. Activa la guía para acompañar paso a paso al niño.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            {/* Toggle Guided Mode Button */}
+            <button
+              onClick={() => onToggleGuidedMode ? onToggleGuidedMode(!guidedMode) : null}
+              type="button"
+              className={`
+                flex items-center gap-1.5 px-3.5 py-2 rounded-2xl font-black text-xs cursor-pointer transition-all shadow-xs
+                ${guidedMode 
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                  : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}
+              `}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{guidedMode ? 'Guía Activada' : 'Activar Guía'}</span>
+            </button>
+
+            {/* Configure Core Vocabulary Modal Trigger */}
+            <button
+              onClick={() => setIsConfigModalOpen(true)}
+              type="button"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl font-black text-xs bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 cursor-pointer transition-all shadow-xs"
+              title="Personalizar pictogramas del Vocabulario Núcleo"
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Configurar Núcleo</span>
+              <span className="sm:hidden">Núcleo</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Active Step Indicator Pill when Guided Mode is ON */}
+        {guidedMode && guidedStepInfo && (
+          <div className="mt-3 pt-3 border-t border-amber-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white/70 rounded-2xl p-2.5 px-3.5 border border-amber-200 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <span className="bg-amber-500 text-white font-black text-[11px] px-2.5 py-1 rounded-xl shadow-2xs shrink-0 tracking-wide">
+                {guidedStepInfo.badge}
+              </span>
+              <span className="font-extrabold text-xs sm:text-sm text-amber-950">
+                {guidedStepInfo.instruction}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-black text-amber-800 shrink-0">
+              <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 1 ? 'bg-amber-300 font-black' : 'bg-amber-100'}`}>1. Yo</span>
+              <span>➔</span>
+              <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 2 ? 'bg-amber-300 font-black' : 'bg-amber-100'}`}>2. Quiero</span>
+              <span>➔</span>
+              <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 3 ? 'bg-amber-300 font-black' : 'bg-amber-100'}`}>3. Objeto</span>
+              <span>➔</span>
+              <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 4 ? 'bg-emerald-300 font-black text-emerald-950' : 'bg-amber-100'}`}>4. Hablar</span>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* 1. Vocabulario Núcleo (Core Vocabulary Stitch) */}
       <section className="bg-white/90 border-2 border-[#d8e3fb] rounded-3xl p-4 sm:p-5 shadow-xs">
-        <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 px-1">
           <div className="flex items-center gap-2">
             <span className="w-3.5 h-3.5 rounded-full bg-[#004ac6]"></span>
             <h2 className="text-base md:text-lg font-black text-[#111c2d] uppercase tracking-wide">
               Vocabulario Núcleo
             </h2>
+            <span className="text-xs text-slate-500 font-bold">
+              ({sortedCore.length} tarjetas)
+            </span>
           </div>
-          <span className="text-[11px] font-black text-[#004ac6] bg-[#dbe1ff] px-3 py-1 rounded-full">
-            CLAVE FITZGERALD
-          </span>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsConfigModalOpen(true)}
+              type="button"
+              className="text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 border border-indigo-200"
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              <span>Personalizar Vocabulario Núcleo</span>
+            </button>
+            <span className="text-[11px] font-black text-[#004ac6] bg-[#dbe1ff] px-3 py-1 rounded-full hidden sm:inline">
+              CLAVE FITZGERALD
+            </span>
+          </div>
         </div>
 
         <div className={`grid ${getCoreGridCols()} gap-2.5 md:gap-3.5`}>
@@ -246,6 +509,7 @@ export default function MainBoardView({
               textTransform={textCase}
               imageOverrides={imageOverrides}
               textOverrides={textOverrides}
+              isHighlighted={guidedMode && isCardGuidedTarget(item)}
             />
           ))}
         </div>
@@ -317,6 +581,7 @@ export default function MainBoardView({
                     textTransform={textCase}
                     imageOverrides={imageOverrides}
                     textOverrides={textOverrides}
+                    isHighlighted={guidedMode && isCardGuidedTarget(item)}
                   />
                 ))}
               </div>
@@ -324,6 +589,17 @@ export default function MainBoardView({
           );
         })}
       </section>
+
+      {/* Core Vocabulary Configurator Modal */}
+      <CoreVocabularyConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        currentCore={sortedCore}
+        onSaveCore={handleSaveConfiguredCore}
+        allAvailablePictograms={allAvailablePictograms}
+        imageOverrides={imageOverrides}
+        textOverrides={textOverrides}
+      />
 
       {/* Espaciador inferior para garantizar 100% de visibilidad en PC y móviles */}
       <div className="h-16 md:h-24" aria-hidden="true" />

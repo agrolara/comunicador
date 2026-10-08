@@ -42,6 +42,13 @@ export default function App() {
   const [cardSize, setCardSize] = useState(() => localStorage.getItem('danmax_card_size') || 'md');
   const [speakOnTap, setSpeakOnTap] = useState(() => localStorage.getItem('danmax_speak_on_tap') !== 'false');
   const [orientationMode, setOrientationMode] = useState(() => localStorage.getItem('danmax_orientation_mode') || 'auto');
+  const [guidedMode, setGuidedMode] = useState(() => localStorage.getItem('danmax_guided_mode') !== 'false');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('danmax_guided_mode', guidedMode.toString());
+    } catch (e) {}
+  }, [guidedMode]);
 
   // Custom User Pictograms from localStorage (e.g. Chocapic)
   const [customPictograms, setCustomPictograms] = useState(() => {
@@ -199,6 +206,14 @@ export default function App() {
     setActiveTab('categories');
   };
 
+  const isSentenceReadyToSpeak = useMemo(() => {
+    if (!guidedMode || sentenceItems.length < 2) return false;
+    const lastItem = sentenceItems[sentenceItems.length - 1];
+    const lastText = ((textOverrides && textOverrides[lastItem.id]) || lastItem.text || '').toUpperCase().trim();
+    const nonTerminalVerbs = ['YO', 'QUIERO', 'NO QUIERO', 'DAME'];
+    return !nonTerminalVerbs.includes(lastText);
+  }, [guidedMode, sentenceItems, textOverrides]);
+
   return (
     <div className={`min-h-screen flex flex-col bg-[#f9f9ff] text-[#111c2d] ${getFontFamilyClass()} ${highContrast ? 'high-contrast' : ''} ${orientationMode === 'portrait' ? 'orientation-portrait' : orientationMode === 'landscape' ? 'orientation-landscape' : ''}`}>
       {/* Top App Bar con Buscador Rápido y Bottom Navigation Material 3 */}
@@ -224,6 +239,7 @@ export default function App() {
           highContrast={highContrast}
           imageOverrides={imageOverrides}
           textOverrides={textOverrides}
+          highlightSpeak={isSentenceReadyToSpeak}
         />
       )}
 
@@ -241,6 +257,9 @@ export default function App() {
             imageOverrides={imageOverrides}
             textOverrides={textOverrides}
             customPictograms={customPictograms}
+            sentenceItems={sentenceItems}
+            guidedMode={guidedMode}
+            onToggleGuidedMode={setGuidedMode}
             onNavigateTab={setActiveTab}
             onNavigateCategory={handleNavigateToCategory}
           />
@@ -328,6 +347,8 @@ export default function App() {
             setSpeakOnTap={setSpeakOnTap}
             orientationMode={orientationMode}
             setOrientationMode={setOrientationMode}
+            guidedMode={guidedMode}
+            setGuidedMode={setGuidedMode}
           />
         )}
 

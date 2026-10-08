@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Sliders, Volume2, Eye, LayoutGrid, Type, Clock, Smartphone, Monitor, RotateCcw, Check, Sparkles, Download, Upload, ShieldCheck } from 'lucide-react';
+import { Sliders, Volume2, Eye, LayoutGrid, Type, Clock, Smartphone, Monitor, RotateCcw, Check, Sparkles, Download, Upload, ShieldCheck, Compass } from 'lucide-react';
 import { tts, VOICE_OPTIONS } from '../services/tts';
 import { analytics } from '../services/analytics';
 import confetti from 'canvas-confetti';
@@ -22,7 +22,9 @@ export default function AccessibilitySettingsView({
   speakOnTap,
   setSpeakOnTap,
   orientationMode = 'auto',
-  setOrientationMode = () => {}
+  setOrientationMode = () => {},
+  guidedMode = true,
+  setGuidedMode = () => {}
 }) {
   const gridOptions = [
     { id: '2x2', label: '2 x 2 (4 Celdas)', desc: 'Motricidad inicial o baja visión' },
@@ -111,6 +113,46 @@ export default function AccessibilitySettingsView({
               Configuraciones exactas de Stitch: Cuadrículas, voz, tipografía y tacto
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* 0. MODO GUÍA DE APRENDIZAJE Y MODELADO ASISTIDO (SCAFFOLDING) */}
+      <div className="bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-orange-500/10 border-2 border-amber-300 rounded-3xl p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+              <Compass className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-black text-slate-900 text-base md:text-lg">
+                  Modo Guía de Aprendizaje (Modelado Asistido)
+                </h3>
+                <span className="bg-amber-200 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                  Para Iniciar
+                </span>
+              </div>
+              <p className="text-xs text-slate-700 font-medium mt-1 leading-relaxed max-w-2xl">
+                Incentiva al niño a construir frases coherentes resaltando paso a paso las tarjetas del vocabulario:
+                <strong className="text-slate-900"> 1. Sujeto ("YO") ➔ 2. Deseo ("QUIERO") ➔ 3. Objeto/Comida ("CHOCOLATE") ➔ 4. Hablar ("HABLAR")</strong>.
+              </p>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-3 bg-white px-4 py-3 rounded-2xl border-2 border-amber-300 shadow-xs cursor-pointer self-end sm:self-auto shrink-0 hover:bg-amber-50 transition-all">
+            <input
+              type="checkbox"
+              checked={guidedMode}
+              onChange={(e) => {
+                setGuidedMode(e.target.checked);
+                tts.playChime('pop');
+              }}
+              className="w-5 h-5 accent-amber-500 cursor-pointer"
+            />
+            <span className="font-black text-sm text-slate-900">
+              {guidedMode ? 'Guía Activada' : 'Guía Desactivada'}
+            </span>
+          </label>
         </div>
       </div>
 

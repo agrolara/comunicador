@@ -116,10 +116,18 @@ export default function PictoCard({
         rounded-2xl border-[2.5px] cursor-pointer select-none transition-all duration-75
         active:translate-y-[4.5px] active:shadow-none
         ${sizeConfig.card}
-        ${isHighlighted ? 'scale-105 ring-4 ring-blue-600 !bg-yellow-200 z-10' : ''}
+        ${isHighlighted ? 'scale-105 ring-4 ring-amber-400 shadow-xl !bg-amber-50 z-20 animate-pulse' : ''}
         ${highContrast ? '!border-[3.5px] font-black' : 'font-extrabold'}
       `}
     >
+      {/* Guided Mode Beacon Badge */}
+      {isHighlighted && (
+        <div className="absolute top-1 right-1 z-30 bg-amber-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded-full shadow-md flex items-center gap-0.5 pointer-events-none animate-bounce">
+          <span>✨</span>
+          <span className="hidden sm:inline">Toca</span>
+        </div>
+      )}
+
       {/* Visual Dwell Time Progress Overlay */}
       {holdingProgress > 0 && (
         <div 

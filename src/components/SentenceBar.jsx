@@ -11,7 +11,8 @@ export default function SentenceBar({
   onClear,
   highContrast = false,
   imageOverrides = {},
-  textOverrides = {}
+  textOverrides = {},
+  highlightSpeak = false
 }) {
   const [highlightedIndex, setHighlightedIndex] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -142,12 +143,20 @@ export default function SentenceBar({
             boxShadow: items.length > 0 && !isSpeaking ? '0 5px 0 #047857' : 'none'
           }}
           className={`
-            flex items-center gap-2.5 px-6 py-4 rounded-2xl font-black text-white text-base md:text-lg transition-all duration-75
+            relative flex items-center gap-2.5 px-6 py-4 rounded-2xl font-black text-white text-base md:text-lg transition-all duration-75
             ${items.length > 0 && !isSpeaking 
               ? 'bg-[#10B981] hover:bg-[#059669] active:translate-y-[5px] cursor-pointer' 
               : 'bg-slate-300 cursor-not-allowed opacity-50'}
+            ${highlightSpeak && items.length > 0 && !isSpeaking
+              ? 'ring-4 ring-amber-400 ring-offset-2 animate-bounce !bg-emerald-500 shadow-xl z-10'
+              : ''}
           `}
         >
+          {highlightSpeak && items.length > 0 && !isSpeaking && (
+            <span className="absolute -top-2.5 -right-2 bg-amber-400 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full shadow-md animate-pulse uppercase tracking-wider">
+              ✨ ¡Toca aquí!
+            </span>
+          )}
           <Volume2 className="w-6 h-6 animate-pulse" />
           <span>HABLAR</span>
         </button>

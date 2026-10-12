@@ -202,6 +202,42 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Proxy endpoint: OpenRouter Available Models & Pricing
+    if (pathname === '/api/ai/models') {
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        });
+        res.end();
+        return;
+      }
+
+      try {
+        const modelsRes = await fetch('https://openrouter.ai/api/v1/models', {
+          headers: {
+            'HTTP-Referer': 'https://comunicador.agrolara.dedyn.io',
+            'X-Title': 'Esta es mi voz sin límites CAA'
+          }
+        });
+        const modelsData = await modelsRes.json();
+        res.writeHead(modelsRes.status, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=300'
+        });
+        res.end(JSON.stringify(modelsData));
+      } catch (err) {
+        res.writeHead(500, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({ error: 'Failed to fetch models', details: err.message }));
+      }
+      return;
+    }
+
     // Healthcheck endpoint for Coolify / Docker
     if (pathname === '/healthz' || pathname === '/api/health') {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });

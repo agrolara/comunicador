@@ -35,7 +35,13 @@ import {
   Send,
   Eye,
   EyeOff,
-  Smartphone
+  Smartphone,
+  LogOut,
+  Search,
+  Zap,
+  Coins,
+  ExternalLink,
+  Filter
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { aiService, DEFAULT_MODEL, DEFAULT_OPENROUTER_KEY } from '../services/ai';
@@ -151,6 +157,114 @@ export default function AdminDashboardView() {
   const [apiKeySavedSuccess, setApiKeySavedSuccess] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
+
+  // OpenRouter Models & Pricing State
+  const [selectedModel, setSelectedModel] = useState(() => aiService.getModel());
+  const [modelsList, setModelsList] = useState(() => aiService.getCachedModels());
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [modelFilterTab, setModelFilterTab] = useState('free'); // 'free', 'recommended', 'cheap', 'all'
+  const [modelSearchTerm, setModelSearchTerm] = useState('');
+  const [selectedProviderFilter, setSelectedProviderFilter] = useState('all');
+  const [testingModelId, setTestingModelId] = useState(null);
+  const [testModelResult, setTestModelResult] = useState(null);
+  const [modelChangeNotification, setModelChangeNotification] = useState('');
+
+  const handleRefreshModels = async () => {
+    setIsLoadingModels(true);
+    tts.playChime('pop');
+    try {
+      const freshModels = await aiService.fetchLiveModels(apiKeyInput);
+      setModelsList(freshModels);
+      tts.playChime('success');
+    } catch (e) {
+      console.error('Error refreshing models:', e);
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
+
+  const handleSelectModel = (modelId) => {
+    setSelectedModel(modelId);
+    aiService.setModel(modelId);
+    tts.playChime('success');
+    setModelChangeNotification(`Modelo activado: ${modelId}`);
+    setTimeout(() => setModelChangeNotification(''), 4000);
+    try {
+      confetti({ particleCount: 35, spread: 60, origin: { y: 0.6 } });
+    } catch (e) {}
+  };
+
+  const handleTestSpecificModel = async (modelId) => {
+    setTestingModelId(modelId);
+    setTestModelResult(null);
+    tts.playChime('pop');
+    try {
+      const res = await aiService.testConnection(modelId);
+      setTestModelResult(res);
+      if (res.success) {
+        tts.playChime('success');
+      }
+    } catch (err) {
+      setTestModelResult({ success: false, error: err.message, model: modelId });
+    } finally {
+      setTestingModelId(null);
+    }
+  };
+
+  // Distinct providers list
+  const availableProviders = React.useMemo(() => {
+    const set = new Set();
+    modelsList.forEach(m => {
+      if (m.provider) set.add(m.provider);
+    });
+    return Array.from(set).sort();
+  }, [modelsList]);
+
+  // Counts
+  const freeModelsCount = React.useMemo(() => modelsList.filter(m => m.isFree).length, [modelsList]);
+  const recommendedModelsCount = React.useMemo(() => modelsList.filter(m => m.isRecommended).length, [modelsList]);
+
+  // Filtered models
+  const filteredModels = React.useMemo(() => {
+    let list = modelsList;
+
+    if (modelFilterTab === 'free') {
+      list = list.filter(m => m.isFree);
+    } else if (modelFilterTab === 'recommended') {
+      list = list.filter(m => m.isRecommended || m.isFree);
+    } else if (modelFilterTab === 'cheap') {
+      list = list.filter(m => m.promptPricePerMillion <= 0.50);
+    }
+
+    if (selectedProviderFilter !== 'all') {
+      list = list.filter(m => m.provider.toLowerCase() === selectedProviderFilter.toLowerCase());
+    }
+
+    if (modelSearchTerm.trim()) {
+      const q = modelSearchTerm.toLowerCase().trim();
+      list = list.filter(m => 
+        (m.name && m.name.toLowerCase().includes(q)) || 
+        (m.id && m.id.toLowerCase().includes(q)) || 
+        (m.provider && m.provider.toLowerCase().includes(q)) || 
+        (m.description && m.description.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }, [modelsList, modelFilterTab, selectedProviderFilter, modelSearchTerm]);
+
+  // Active model details
+  const activeModelDetails = React.useMemo(() => {
+    return modelsList.find(m => m.id === selectedModel) || {
+      id: selectedModel,
+      name: selectedModel,
+      provider: selectedModel.split('/')[0] || 'OpenRouter',
+      context_length_formatted: '128K',
+      isFree: selectedModel.includes(':free'),
+      pricingFormatted: selectedModel.includes(':free') ? '100% Gratis ($0.00)' : 'Tarifa estándar OpenRouter',
+      description: 'Modelo activo en la plataforma.'
+    };
+  }, [modelsList, selectedModel]);
 
   // Save clients to localStorage
   useEffect(() => {
@@ -595,11 +709,11 @@ export default function AdminDashboardView() {
             <button
               onClick={handleLogout}
               type="button"
-              className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-rose-500/40 text-white rounded-xl font-bold text-xs cursor-pointer transition-all border border-white/15"
-              title="Bloquear panel"
+              className="flex items-center gap-2 px-3.5 py-2 bg-rose-500/30 hover:bg-rose-600 text-white rounded-xl font-black text-xs cursor-pointer transition-all border border-rose-400/40 shadow-xs hover:shadow-md active:scale-95"
+              title="Cerrar sesión de Administrador (Logout)"
             >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Bloquear</span>
+              <LogOut className="w-4 h-4 text-rose-200" />
+              <span>Cerrar Sesión (Logout)</span>
             </button>
           </div>
         </div>
@@ -1401,7 +1515,7 @@ export default function AdminDashboardView() {
               <span>Configuración de API Key de OpenRouter</span>
             </h4>
             <p className="text-xs text-slate-500 font-medium">
-              Conexión para Meta LLaMA 3.3 (70B Instruct). Puedes reemplazar la llave o validar su operatividad.
+              Conexión para Meta LLaMA 3.3 (70B Instruct), modelos gratuitos y modelos de alta precisión de OpenRouter.
             </p>
 
             <form onSubmit={handleSaveApiKey} className="space-y-3">
@@ -1423,8 +1537,8 @@ export default function AdminDashboardView() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] text-slate-400 font-medium">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[11px] text-slate-500 font-medium">
                   {apiKeySavedSuccess ? '✓ Llave guardada en almacenamiento local' : 'Llave oficial de Mauricio Lara configurada'}
                 </span>
 
@@ -1432,20 +1546,376 @@ export default function AdminDashboardView() {
                   <button
                     type="button"
                     onClick={handleTestAiConnection}
-                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+                    disabled={testingConnection}
+                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5 transition-all"
                   >
-                    Probar Conexión
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{testingConnection ? 'Probando...' : 'Probar Conexión'}</span>
                   </button>
 
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl cursor-pointer shadow-xs"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl cursor-pointer shadow-xs transition-all"
                   >
                     Guardar Llave
                   </button>
                 </div>
               </div>
+
+              {aiConnectionStatus && (
+                <div className={`p-3 rounded-xl text-xs font-mono border ${aiConnectionStatus.success ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'}`}>
+                  {aiConnectionStatus.success 
+                    ? `✓ ${aiConnectionStatus.message}` 
+                    : `✕ Error: ${aiConnectionStatus.error}`}
+                </div>
+              )}
             </form>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* OPENROUTER MODELS CATALOG & PRICING WITH FREE MODELS HIGHLIGHT */}
+          {/* ========================================================================= */}
+          <div className="bg-white border-2 border-slate-200 rounded-3xl p-5 md:p-6 shadow-xs space-y-5">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shadow-xs">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-black text-slate-800 text-base md:text-lg flex items-center gap-2">
+                    <span>Modelos de Inteligencia Artificial en OpenRouter</span>
+                    <span className="text-[10px] bg-indigo-100 text-indigo-800 font-black px-2 py-0.5 rounded-full uppercase">
+                      {modelsList.length} Modelos
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Elige el modelo con el que operará el Copiloto IA Clínico, generador de informes fonoaudiológicos y metas SMART.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleRefreshModels}
+                disabled={isLoadingModels}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs cursor-pointer transition-all self-start sm:self-auto border border-slate-200"
+                title="Sincronizar catálogo oficial en vivo desde OpenRouter"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isLoadingModels ? 'animate-spin' : ''}`} />
+                <span>{isLoadingModels ? 'Actualizando...' : 'Actualizar Catálogo'}</span>
+              </button>
+            </div>
+
+            {/* Notification on model change */}
+            {modelChangeNotification && (
+              <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-2xl text-xs font-black flex items-center gap-2 animate-in fade-in duration-200">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{modelChangeNotification}</span>
+              </div>
+            )}
+
+            {/* Active Model Spotlight Card */}
+            <div className="bg-gradient-to-r from-indigo-50/80 via-blue-50/80 to-purple-50/80 border-2 border-indigo-300 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-600 text-white px-2 py-0.5 rounded-md">
+                    MODELO ACTIVO ACTUALMENTE
+                  </span>
+                  {activeModelDetails.isFree ? (
+                    <span className="text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>100% GRATUITO ($0.00 / token)</span>
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full">
+                      💳 {activeModelDetails.pricingFormatted}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-semibold text-slate-600 bg-white/80 px-2 py-0.5 rounded-md border border-slate-200">
+                    📏 Contexto: {activeModelDetails.context_length_formatted}
+                  </span>
+                </div>
+                <div className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>{activeModelDetails.name}</span>
+                  <span className="text-xs font-mono font-medium text-slate-500">({activeModelDetails.id})</span>
+                </div>
+                <p className="text-xs text-slate-600 max-w-2xl">
+                  {activeModelDetails.description}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleTestSpecificModel(selectedModel)}
+                  disabled={testingModelId === selectedModel}
+                  className="px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <Zap className={`w-3.5 h-3.5 text-amber-300 ${testingModelId === selectedModel ? 'animate-bounce' : ''}`} />
+                  <span>{testingModelId === selectedModel ? 'Verificando...' : 'Probar Modelo Activo'}</span>
+                </button>
+              </div>
+            </div>
+
+            {testModelResult && (
+              <div className={`p-3 rounded-2xl text-xs font-mono border ${testModelResult.success ? 'bg-emerald-50 text-emerald-900 border-emerald-200' : 'bg-rose-50 text-rose-900 border-rose-200'}`}>
+                {testModelResult.success 
+                  ? `✓ Prueba exitosa con ${testModelResult.model}: Latencia ${testModelResult.latency}ms` 
+                  : `✕ Falló la prueba con ${testModelResult.model}: ${testModelResult.error}`}
+              </div>
+            )}
+
+            {/* Filter Tabs & Search Bar */}
+            <div className="space-y-3 pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Category Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => setModelFilterTab('free')}
+                    className={`px-3 py-1.5 rounded-xl font-black text-xs cursor-pointer transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      modelFilterTab === 'free'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>🟢 100% Gratuitos</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${modelFilterTab === 'free' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {freeModelsCount}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setModelFilterTab('recommended')}
+                    className={`px-3 py-1.5 rounded-xl font-black text-xs cursor-pointer transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      modelFilterTab === 'recommended'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>⭐ Recomendados CAA</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${modelFilterTab === 'recommended' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {recommendedModelsCount}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setModelFilterTab('cheap')}
+                    className={`px-3 py-1.5 rounded-xl font-black text-xs cursor-pointer transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      modelFilterTab === 'cheap'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>💰 Económicos (&lt; $0.50)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setModelFilterTab('all')}
+                    className={`px-3 py-1.5 rounded-xl font-black text-xs cursor-pointer transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      modelFilterTab === 'all'
+                        ? 'bg-slate-800 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>🌐 Todos</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${modelFilterTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {modelsList.length}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={modelSearchTerm}
+                    onChange={(e) => setModelSearchTerm(e.target.value)}
+                    placeholder="Buscar modelo o proveedor..."
+                    className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-500"
+                  />
+                  {modelSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setModelSearchTerm('')}
+                      className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Provider Quick Chips */}
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1">
+                <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
+                  <Filter className="w-3 h-3" />
+                  <span>Proveedor:</span>
+                </span>
+                {['all', 'Google', 'Meta', 'NVIDIA', 'DeepSeek', 'OpenAI', 'Mistral', 'Anthropic', 'Qwen'].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setSelectedProviderFilter(p)}
+                    className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
+                      selectedProviderFilter.toLowerCase() === p.toLowerCase()
+                        ? 'bg-indigo-100 text-indigo-800 border border-indigo-300'
+                        : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    {p === 'all' ? 'Todos' : p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Models Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[560px] overflow-y-auto p-1 pr-1.5">
+              {filteredModels.length === 0 ? (
+                <div className="col-span-full py-10 text-center text-slate-400 space-y-2">
+                  <Bot className="w-10 h-10 mx-auto text-slate-300" />
+                  <p className="text-sm font-bold">No se encontraron modelos con los filtros seleccionados.</p>
+                  <button
+                    type="button"
+                    onClick={() => { setModelFilterTab('all'); setModelSearchTerm(''); setSelectedProviderFilter('all'); }}
+                    className="text-xs text-indigo-600 font-bold underline cursor-pointer"
+                  >
+                    Limpiar filtros
+                  </button>
+                </div>
+              ) : (
+                filteredModels.map((m) => {
+                  const isCurrent = selectedModel === m.id;
+                  return (
+                    <div
+                      key={m.id}
+                      className={`
+                        rounded-2xl border-2 p-3.5 flex flex-col justify-between transition-all space-y-3
+                        ${isCurrent 
+                          ? 'border-indigo-600 bg-indigo-50/40 ring-2 ring-indigo-500/20 shadow-xs' 
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'}
+                      `}
+                    >
+                      <div className="space-y-1.5">
+                        {/* Top Tag & Price */}
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[10px] font-extrabold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase">
+                            {m.provider}
+                          </span>
+                          
+                          {m.isFree ? (
+                            <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-emerald-600" />
+                              <span>GRATIS</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                              {m.promptPricePerMillion < 0.01 
+                                ? `$${m.promptPricePerMillion.toFixed(4)}/1M` 
+                                : `$${m.promptPricePerMillion.toFixed(2)}/1M`}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Model Name */}
+                        <div>
+                          <h5 className="font-black text-sm text-slate-900 leading-tight">
+                            {m.name}
+                          </h5>
+                          <p className="font-mono text-[10px] text-slate-400 truncate" title={m.id}>
+                            {m.id}
+                          </p>
+                        </div>
+
+                        {/* Pricing details & Context length */}
+                        <div className="bg-slate-50 rounded-xl p-2 border border-slate-100 space-y-0.5 text-[11px]">
+                          <div className="flex items-center justify-between text-slate-600">
+                            <span className="font-medium">Contexto:</span>
+                            <span className="font-black text-slate-800">{m.context_length_formatted} tokens</span>
+                          </div>
+                          <div className="flex items-center justify-between text-slate-600">
+                            <span className="font-medium">Tokens Entrada:</span>
+                            <span className={`font-black ${m.isFree ? 'text-emerald-700' : 'text-slate-800'}`}>
+                              {m.isFree ? '$0.00' : `$${m.promptPricePerMillion.toFixed(2)} / 1M`}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-slate-600">
+                            <span className="font-medium">Tokens Salida:</span>
+                            <span className={`font-black ${m.isFree ? 'text-emerald-700' : 'text-slate-800'}`}>
+                              {m.isFree ? '$0.00' : `$${m.completionPricePerMillion.toFixed(2)} / 1M`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Short Description */}
+                        {m.description && (
+                          <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                            {m.description}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="pt-2 flex items-center gap-1.5 border-t border-slate-100">
+                        {isCurrent ? (
+                          <div className="flex-1 py-1.5 bg-emerald-600 text-white rounded-xl font-black text-xs text-center flex items-center justify-center gap-1 shadow-2xs">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Modelo Activo</span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectModel(m.id)}
+                            className="flex-1 py-1.5 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl font-bold text-xs cursor-pointer transition-all shadow-2xs active:scale-95"
+                          >
+                            Seleccionar
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleTestSpecificModel(m.id)}
+                          disabled={testingModelId === m.id}
+                          className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl cursor-pointer transition-all"
+                          title="Probar latencia y respuesta de este modelo"
+                        >
+                          <Zap className={`w-3.5 h-3.5 ${testingModelId === m.id ? 'text-indigo-600 animate-spin' : 'text-amber-500'}`} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* LOGOUT & SESSION MANAGEMENT */}
+          {/* ========================================================================= */}
+          <div className="bg-rose-50/70 border-2 border-rose-200 rounded-3xl p-5 md:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h4 className="font-black text-rose-950 text-base flex items-center gap-2">
+                <LogOut className="w-5 h-5 text-rose-600" />
+                <span>Cerrar Sesión de Administrador</span>
+              </h4>
+              <p className="text-xs text-rose-800 font-medium max-w-xl">
+                Al cerrar sesión se bloqueará el panel de administración y clientes. Se requerirá ingresar nuevamente la clave única ({showSettingsPin ? adminPin : '••••••••'}) para ingresar.
+              </p>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              type="button"
+              className="px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-xs cursor-pointer transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 active:scale-95"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Cerrar Sesión (Logout)</span>
+            </button>
           </div>
         </div>
       )}

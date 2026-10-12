@@ -9,6 +9,204 @@ export const DEFAULT_MODEL = 'meta-llama/llama-3.3-70b-instruct';
 const STORAGE_KEY_API_KEY = 'danmax_openrouter_api_key';
 const STORAGE_KEY_MODEL = 'danmax_openrouter_model';
 
+export const CURATED_MODELS = [
+  {
+    id: 'meta-llama/llama-3.3-70b-instruct',
+    name: 'Meta: LLaMA 3.3 70B Instruct',
+    provider: 'Meta',
+    context_length: 128000,
+    context_length_formatted: '128K',
+    promptPricePerMillion: 0.13,
+    completionPricePerMillion: 0.40,
+    isFree: false,
+    pricingFormatted: '$0.13 in / $0.40 out por 1M',
+    description: 'Modelo oficial recomendado de alto rendimiento para informes fonoaudiológicos y metas terapéuticas.',
+    isRecommended: true
+  },
+  {
+    id: 'google/gemma-4-31b-it:free',
+    name: 'Google: Gemma 4 31B (free)',
+    provider: 'Google',
+    context_length: 262144,
+    context_length_formatted: '262K',
+    promptPricePerMillion: 0,
+    completionPricePerMillion: 0,
+    isFree: true,
+    pricingFormatted: '100% Gratis ($0.00)',
+    description: 'Modelo denso multimodal de Google DeepMind. Excelente razonamiento en español y 100% gratuito.',
+    isRecommended: true
+  },
+  {
+    id: 'google/gemma-4-26b-a4b-it:free',
+    name: 'Google: Gemma 4 26B A4B (free)',
+    provider: 'Google',
+    context_length: 262144,
+    context_length_formatted: '262K',
+    promptPricePerMillion: 0,
+    completionPricePerMillion: 0,
+    isFree: true,
+    pricingFormatted: '100% Gratis ($0.00)',
+    description: 'Arquitectura MoE ligera y ultra-rápida de Google para respuestas instantáneas sin costo.',
+    isRecommended: true
+  },
+  {
+    id: 'nvidia/nemotron-3.5-lightning:free',
+    name: 'NVIDIA: Nemotron 3.5 Lightning (free)',
+    provider: 'NVIDIA',
+    context_length: 1000000,
+    context_length_formatted: '1M',
+    promptPricePerMillion: 0,
+    completionPricePerMillion: 0,
+    isFree: true,
+    pricingFormatted: '100% Gratis ($0.00)',
+    description: '1 Millón de tokens de contexto con arquitectura ultra-rápida MoE de NVIDIA sin costo.',
+    isRecommended: true
+  },
+  {
+    id: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+    name: 'NVIDIA: Nemotron 3 Ultra (free)',
+    provider: 'NVIDIA',
+    context_length: 1000000,
+    context_length_formatted: '1M',
+    promptPricePerMillion: 0,
+    completionPricePerMillion: 0,
+    isFree: true,
+    pricingFormatted: '100% Gratis ($0.00)',
+    description: 'Modelo de 550B parámetros con arquitectura híbrida Transformer-Mamba para análisis profundo.',
+    isRecommended: true
+  },
+  {
+    id: 'thinkingmachines/inkling:free',
+    name: 'Thinking Machines: Inkling (free)',
+    provider: 'Thinking Machines',
+    context_length: 1048576,
+    context_length_formatted: '1M',
+    promptPricePerMillion: 0,
+    completionPricePerMillion: 0,
+    isFree: true,
+    pricingFormatted: '100% Gratis ($0.00)',
+    description: 'Razonamiento complejo y asistencia en tareas extensas con 1M de tokens gratuito.',
+    isRecommended: false
+  },
+  {
+    id: 'liquid/lfm-2.5-2.6b:free',
+    name: 'LiquidAI: LFM 2.5 2.6B (free)',
+    provider: 'LiquidAI',
+    context_length: 65536,
+    context_length_formatted: '65K',
+    promptPricePerMillion: 0,
+    completionPricePerMillion: 0,
+    isFree: true,
+    pricingFormatted: '100% Gratis ($0.00)',
+    description: 'Modelo compacto ultra-ligero para respuestas inmediatas de baja latencia.',
+    isRecommended: false
+  },
+  {
+    id: 'apodex/apodex-1.1-mini:free',
+    name: 'Apodex: Apodex 1.1 Mini (free)',
+    provider: 'Apodex',
+    context_length: 262144,
+    context_length_formatted: '262K',
+    promptPricePerMillion: 0,
+    completionPricePerMillion: 0,
+    isFree: true,
+    pricingFormatted: '100% Gratis ($0.00)',
+    description: 'Modelo enfocado en síntesis de datos y resúmenes estructurados sin costo.',
+    isRecommended: false
+  },
+  {
+    id: 'dots-studio/dots-3-note-preview:free',
+    name: 'Dots Studio: Dots3-Note Preview (free)',
+    provider: 'Dots Studio',
+    context_length: 512000,
+    context_length_formatted: '512K',
+    promptPricePerMillion: 0,
+    completionPricePerMillion: 0,
+    isFree: true,
+    pricingFormatted: '100% Gratis ($0.00)',
+    description: 'Ventana de medio millón de tokens para análisis de historiales largos.',
+    isRecommended: false
+  },
+  {
+    id: 'deepseek/deepseek-chat',
+    name: 'DeepSeek: DeepSeek-V3',
+    provider: 'DeepSeek',
+    context_length: 64000,
+    context_length_formatted: '64K',
+    promptPricePerMillion: 0.14,
+    completionPricePerMillion: 0.28,
+    isFree: false,
+    pricingFormatted: '$0.14 in / $0.28 out por 1M',
+    description: 'Líder en relación calidad-precio. Redacción clínica impecable por centavos de dólar.',
+    isRecommended: true
+  },
+  {
+    id: 'google/gemini-2.0-flash-001',
+    name: 'Google: Gemini 2.0 Flash',
+    provider: 'Google',
+    context_length: 1048576,
+    context_length_formatted: '1M',
+    promptPricePerMillion: 0.10,
+    completionPricePerMillion: 0.40,
+    isFree: false,
+    pricingFormatted: '$0.10 in / $0.40 out por 1M',
+    description: '1M de contexto a máxima velocidad para generación de informes clínicos instantáneos.',
+    isRecommended: true
+  },
+  {
+    id: 'openai/gpt-4o-mini',
+    name: 'OpenAI: GPT-4o Mini',
+    provider: 'OpenAI',
+    context_length: 128000,
+    context_length_formatted: '128K',
+    promptPricePerMillion: 0.15,
+    completionPricePerMillion: 0.60,
+    isFree: false,
+    pricingFormatted: '$0.15 in / $0.60 out por 1M',
+    description: 'El modelo económico de OpenAI con alta coherencia y sintaxis en español.',
+    isRecommended: true
+  },
+  {
+    id: 'mistralai/mistral-small-24b-instruct-2501',
+    name: 'Mistral: Mistral Small 24B',
+    provider: 'Mistral',
+    context_length: 32768,
+    context_length_formatted: '32K',
+    promptPricePerMillion: 0.07,
+    completionPricePerMillion: 0.14,
+    isFree: false,
+    pricingFormatted: '$0.07 in / $0.14 out por 1M',
+    description: 'Ultra económico de origen europeo con excelente rendimiento gramatical.',
+    isRecommended: false
+  },
+  {
+    id: 'qwen/qwen-2.5-72b-instruct',
+    name: 'Qwen: Qwen 2.5 72B Instruct',
+    provider: 'Qwen',
+    context_length: 131072,
+    context_length_formatted: '128K',
+    promptPricePerMillion: 0.35,
+    completionPricePerMillion: 0.40,
+    isFree: false,
+    pricingFormatted: '$0.35 in / $0.40 out por 1M',
+    description: 'Potente modelo open-weights de 72B con alta precisión en taxonomía clínica.',
+    isRecommended: false
+  },
+  {
+    id: 'anthropic/claude-3.5-haiku',
+    name: 'Anthropic: Claude 3.5 Haiku',
+    provider: 'Anthropic',
+    context_length: 200000,
+    context_length_formatted: '200K',
+    promptPricePerMillion: 0.80,
+    completionPricePerMillion: 4.00,
+    isFree: false,
+    pricingFormatted: '$0.80 in / $4.00 out por 1M',
+    description: 'Gran empatía, redacción fluida y calidez humana de Anthropic.',
+    isRecommended: false
+  }
+];
+
 export const aiService = {
   getApiKey() {
     try {
@@ -44,27 +242,136 @@ export const aiService = {
     } catch (e) {}
   },
 
-  // Test connection and latency
-  async testConnection() {
+  // Get cached models or fallback to curated list
+  getCachedModels() {
+    try {
+      const saved = localStorage.getItem('danmax_openrouter_cached_models');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return CURATED_MODELS;
+  },
+
+  // Fetch live models from OpenRouter (via server proxy or direct)
+  async fetchLiveModels(apiKey) {
+    const key = apiKey || this.getApiKey();
+    let rawList = [];
+
+    // 1. Try server proxy first
+    try {
+      const res = await fetch('/api/ai/models');
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          rawList = json.data;
+        }
+      }
+    } catch (e) {}
+
+    // 2. Fallback direct to OpenRouter API
+    if (rawList.length === 0) {
+      try {
+        const headers = {
+          'HTTP-Referer': 'https://comunicador.agrolara.dedyn.io',
+          'X-Title': 'Esta es mi voz sin límites CAA'
+        };
+        if (key) {
+          headers['Authorization'] = `Bearer ${key}`;
+        }
+        const res = await fetch('https://openrouter.ai/api/v1/models', { headers });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+            rawList = json.data;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (rawList.length === 0) {
+      return this.getCachedModels();
+    }
+
+    // Format every model
+    const formatted = rawList.map(m => {
+      const promptP = parseFloat(m.pricing?.prompt || 0) * 1000000;
+      const compP = parseFloat(m.pricing?.completion || 0) * 1000000;
+      const isFree = (promptP === 0 && compP === 0) || (m.id && m.id.includes(':free'));
+      
+      const providerRaw = (m.id && m.id.split('/')[0]) || 'OpenRouter';
+      const provider = providerRaw.charAt(0).toUpperCase() + providerRaw.slice(1);
+
+      return {
+        id: m.id,
+        name: m.name || m.id,
+        provider,
+        context_length: m.context_length || 0,
+        context_length_formatted: m.context_length >= 1000000 
+          ? `${Math.round(m.context_length / 1000000)}M` 
+          : `${Math.round((m.context_length || 0) / 1000)}K`,
+        promptPricePerMillion: promptP,
+        completionPricePerMillion: compP,
+        isFree,
+        pricingFormatted: isFree 
+          ? '100% Gratis ($0.00)' 
+          : `$${promptP < 0.01 ? promptP.toFixed(4) : promptP.toFixed(2)} in / $${compP < 0.01 ? compP.toFixed(4) : compP.toFixed(2)} out por 1M`,
+        description: m.description || 'Modelo de inteligencia artificial en OpenRouter.',
+        isRecommended: m.id.includes('llama-3.3') || m.id.includes('gemma') || m.id.includes('deepseek') || m.id.includes('gpt-4o') || m.id.includes('gemini')
+      };
+    });
+
+    // Sort: Free first, then Recommended, then cheaper
+    formatted.sort((a, b) => {
+      if (a.isFree && !b.isFree) return -1;
+      if (!a.isFree && b.isFree) return 1;
+      if (a.isRecommended && !b.isRecommended) return -1;
+      if (!a.isRecommended && b.isRecommended) return 1;
+      return a.promptPricePerMillion - b.promptPricePerMillion;
+    });
+
+    try {
+      localStorage.setItem('danmax_openrouter_cached_models', JSON.stringify(formatted));
+    } catch (e) {}
+
+    return formatted;
+  },
+
+  // Test connection and latency with current or specific model
+  async testConnection(modelOverride) {
     const start = Date.now();
+    const activeModel = modelOverride || this.getModel();
     try {
       const result = await this.chatCompletion({
+        modelOverride: activeModel,
         messages: [{ role: 'user', content: 'Responde exactamente "CONEXION_OK"' }],
         temperature: 0.1,
         maxTokens: 10
       });
       const latency = Date.now() - start;
       const isOk = result && result.includes('CONEXION_OK');
-      return { success: true, latency, message: 'Conexión exitosa con OpenRouter Meta LLaMA 3.3 (70B)', isOk };
+      return { 
+        success: true, 
+        latency, 
+        model: activeModel,
+        message: `Conexión exitosa con ${activeModel} (${latency}ms)`, 
+        isOk 
+      };
     } catch (error) {
-      return { success: false, latency: Date.now() - start, error: error.message };
+      return { 
+        success: false, 
+        latency: Date.now() - start, 
+        model: activeModel,
+        error: error.message 
+      };
     }
   },
 
   // Core Chat Completion with Proxy + Direct Fallback
-  async chatCompletion({ messages, systemPrompt, temperature = 0.7, maxTokens = 2500 }) {
+  async chatCompletion({ messages, systemPrompt, temperature = 0.7, maxTokens = 2500, modelOverride }) {
     const apiKey = this.getApiKey();
-    const model = this.getModel();
+    const model = modelOverride || this.getModel();
 
     const formattedMessages = [];
     if (systemPrompt) {

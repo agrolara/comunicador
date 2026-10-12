@@ -152,5 +152,20 @@ export const OFFLINE_ARASAAC_CATALOG = {
   "te amo": 8020,
   "bien": 5397,
   "cosquillas": 5480,
-  "hacer cosquillas": 5480
+  "hacer cosquillas": 5480,
+  "lago": 6022,
+  "piscina": 30516,
+  "pileta": 30516,
+  "nadar": 6568,
+  "rio": 6023,
+  "río": 6023,
+  "parque": 2502,
+  "bote": 2311,
+  "barco": 2311,
+  "sol": 2570,
+  "arena": 2697,
+  "tobogán": 2588,
+  "tobogan": 2588,
+  "columpio": 2345,
+  "dinosaurio": 10471
 };

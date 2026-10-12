@@ -66,7 +66,33 @@ const ARASAAC_VERIFIED_DICT = {
   'FELIZ': 9907,
   'CALMA': 31310,
   'COSQUILLAS': 5480,
-  'CUIDADO': 35535
+  'CUIDADO': 35535,
+  'LAGO': 6022,
+  'PISCINA': 30516,
+  'PILETA': 30516,
+  'PLAYA': 30518,
+  'NADAR': 6568,
+  'RIO': 6023,
+  'RÍO': 6023,
+  'BOTE': 2311,
+  'BARCO': 2311,
+  'PARQUE': 2502,
+  'PLAZA': 2502,
+  'SOL': 2570,
+  'ARENA': 2697,
+  'TOBOGAN': 2588,
+  'TOBOGÁN': 2588,
+  'COLUMPIO': 2345,
+  'DINOSAURIO': 10471,
+  'SALIR': 6477,
+  'ENTRAR': 6478,
+  'CALOR': 6432,
+  'FRIO': 6434,
+  'FRÍO': 6434,
+  'BICICLETA': 2305,
+  'BICI': 2305,
+  'COCINAR': 6455,
+  'PIZZA': 2527
 };
 
 export function getVerifiedArasaacId(text, defaultId, isUserSelected) {
@@ -146,6 +172,7 @@ export default function ActivitiesView({ onNavigateTab }) {
   // AI Modal States
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiLevel, setAiLevel] = useState('1');
+  const [aiIdea, setAiIdea] = useState('');
   const [aiContext, setAiContext] = useState('juegos');
   const [aiGoal, setAiGoal] = useState('peticion');
   const [aiToy, setAiToy] = useState('');
@@ -358,6 +385,7 @@ export default function ActivitiesView({ onNavigateTab }) {
         level: aiLevel,
         context: aiContext,
         goal: aiGoal,
+        idea: aiIdea.trim(),
         toyOrItem: aiToy.trim(),
         durationMinutes: aiDuration,
         patientName: 'Dante'
@@ -371,6 +399,7 @@ export default function ActivitiesView({ onNavigateTab }) {
 
       setSelectedActivityId(generated.id);
       setShowAiModal(false);
+      setAiIdea('');
       setAiToy('');
       tts.speak(`Juego ${generated.title} creado con éxito`);
       tts.playChime('success');
@@ -744,10 +773,63 @@ export default function ActivitiesView({ onNavigateTab }) {
                 </div>
               </div>
 
-              {/* 2. Contexto */}
+              {/* 2. Idea o Temática de la Actividad */}
+              <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/70 to-purple-50/70 p-3 rounded-2xl border border-indigo-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>2. Idea, Lugar o Temática de la Actividad:</span>
+                  </label>
+                  <span className="text-[10px] font-black uppercase text-[#004ac6] bg-white px-2 py-0.5 rounded-full border border-blue-200 shadow-2xs">
+                    ¡Genera pictogramas alusivos!
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={aiIdea}
+                  onChange={(e) => setAiIdea(e.target.value)}
+                  placeholder="Ej: Vamos al lago, En la piscina, Día de playa, Paseo en bicicleta, Cocinar galletas..."
+                  className="w-full p-2.5 bg-white border-2 border-indigo-200 rounded-xl font-bold text-xs text-slate-900 focus:border-[#004ac6] focus:outline-none transition-all placeholder:text-slate-400 shadow-2xs"
+                />
+
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    '🌊 Vamos al lago',
+                    '🏊 En la piscina',
+                    '🏖️ Día de playa',
+                    '🌳 Paseo al parque',
+                    '🚴 Andar en bici',
+                    '🍪 Hacer galletas',
+                    '🚗 Pista de autos',
+                    '🦖 Dinosaurios',
+                    '🛒 En el supermercado'
+                  ].map((sug) => {
+                    const cleanSug = sug.replace(/^[^\w\s]+\s*/, '');
+                    return (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => {
+                          setAiIdea(cleanSug);
+                          tts.playChime('pop');
+                        }}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                          aiIdea === cleanSug 
+                            ? 'bg-[#004ac6] text-white shadow-xs' 
+                            : 'bg-white hover:bg-amber-100 hover:text-amber-950 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {sug}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Contexto */}
               <div>
                 <label className="text-xs font-black text-slate-700 block mb-1">
-                  2. ¿Dónde están o qué momento es?
+                  3. ¿Dónde están o qué momento es?
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
@@ -771,10 +853,10 @@ export default function ActivitiesView({ onNavigateTab }) {
                 </div>
               </div>
 
-              {/* 3. Objetivo */}
+              {/* 4. Objetivo */}
               <div>
                 <label className="text-xs font-black text-slate-700 block mb-1">
-                  3. Objetivo Principal de la Actividad:
+                  4. Objetivo Principal de la Actividad:
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
@@ -797,10 +879,10 @@ export default function ActivitiesView({ onNavigateTab }) {
                 </div>
               </div>
 
-              {/* 4. Elemento / Juguete a mano */}
+              {/* 5. Elemento / Juguete a mano */}
               <div>
                 <label className="text-xs font-black text-slate-700 block mb-1">
-                  4. ¿Qué juguete u objeto tienen a mano? (Opcional):
+                  5. ¿Qué juguete u objeto tienen a mano? (Opcional):
                 </label>
                 <input
                   type="text"
@@ -827,10 +909,10 @@ export default function ActivitiesView({ onNavigateTab }) {
                 </div>
               </div>
 
-              {/* 5. Duración */}
+              {/* 6. Duración */}
               <div>
                 <label className="text-xs font-black text-slate-700 block mb-1">
-                  5. Duración estimada:
+                  6. Duración estimada:
                 </label>
                 <div className="flex gap-2">
                   {[5, 10, 15].map((dur) => (

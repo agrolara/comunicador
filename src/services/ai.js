@@ -1,6 +1,7 @@
 // AI Clinical Service powered by OpenRouter & Meta LLaMA 3.3-70B-Instruct
 // "Esta es mi voz sin límites" - HealthTech CAA
 import { ALL_PRESET_PICTOGRAMS } from '../data/pictograms';
+import { arasaac } from './arasaac.js';
 
 // Decodes default key at runtime to avoid git push protection rejection
 const _KEY_B64 = 'c2stb3ItdjEtMDk2YzIzM2JjYWY2NmQ5MmRlNDQzODI3ODE1NWMyZjk3NmVkODYwMWE1MDU0ZDA2OTA1ZmFlNGRkMzg3NDY4Yw==';
@@ -771,6 +772,7 @@ IDs comunes de ARASAAC de referencia:
     level = '1',
     context = 'juegos',
     goal = 'peticion',
+    idea = '',
     toyOrItem = '',
     durationMinutes = 5,
     patientName = 'Dante'
@@ -795,32 +797,40 @@ IDs comunes de ARASAAC de referencia:
     };
 
     const systemPrompt = `Eres un Fonoaudiólogo Especialista Internacional en Estimulación de Lenguaje Asistido (ALS) y Estrategias Naturales de Modelado CAA para niños TEA / no verbales.
-Tu objetivo es diseñar una actividad o juego lúdico de ${durationMinutes} minutos para hacer en casa o en la escuela con el niño llamado ${patientName}.
+Tu objetivo es diseñar una actividad o juego lúdico de ${durationMinutes} minutos para hacer en casa, al aire libre o en la escuela con el niño llamado ${patientName}.
+${idea ? `TEMÁTICA / IDEA ESPECÍFICA SOLICITADA POR EL USUARIO: "${idea}". (Ej: "vamos al lago", "en la piscina", "cocinar", etc.).
+REGLA DE ORO DE PICTOGRAMAS TEMÁTICOS:
+Debes centrar el juego en esta idea ("${idea}") y seleccionar 3 pictogramas EXACTOS y coherentes con ella.
+Por ejemplo:
+- Si la idea es "vamos al lago" o "lago": incluye LAGO (6022), AGUA (32464), VAMOS (8142) o NADAR (6568).
+- Si la idea es "piscina" o "alberca": incluye PISCINA (30516), NADAR (6568), AGUA (32464) o SALIR (6477).
+- Si la idea es "playa": incluye PLAYA (30518), ARENA (2697), VAMOS (8142).
+- Si la idea es con autos: incluye AUTO (2340), VAMOS (8142), PARAR (7196).` : ''}
+${toyOrItem ? `Elemento o juguete disponible: "${toyOrItem}".` : ''}
 La actividad debe dar instrucciones claras al adulto sobre QUÉ HACER CON LAS MANOS, QUÉ DECIR y QUÉ PICTOGRAMA TOCAR.
 Nivel del niño: ${levelMap[level] || 'Nivel 1'}
 Contexto: ${contextMap[context] || 'Juego'}
 Objetivo principal: ${goalMap[goal] || 'Petición'}
-${toyOrItem ? `Elemento disponible: "${toyOrItem}"` : ''}
 
 IMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin bloques markdown como \`\`\`json y sin texto introductorio.
 
 Estructura requerida:
 {
-  "title": "Nombre lúdico y llamativo del juego (Ej: La Carrera Congelada)",
+  "title": "${idea ? `Título alusivo a "${idea}"` : 'Nombre lúdico y llamativo del juego'}",
   "summary": "Resumen en una línea de la dinámica del juego.",
   "levelLabel": "${levelMap[level] || 'Nivel 1'}",
   "contextLabel": "${contextMap[context] || 'Juegos'}",
   "goalLabel": "${goalMap[goal] || 'Petición'}",
   "duration": "${durationMinutes} min",
   "pictograms": [
-    { "text": "VAMOS", "arasaacId": 8142, "role": "Acción principal" },
-    { "text": "PARAR", "arasaacId": 7196, "role": "Límite o Plan B" },
-    { "text": "MÁS", "arasaacId": 3220, "role": "Continuidad" }
+    { "text": "PALABRA 1 (MAYÚSCULAS)", "arasaacId": 6022, "role": "Elemento clave temático (ej: LAGO, PISCINA, AUTO)" },
+    { "text": "PALABRA 2 (MAYÚSCULAS)", "arasaacId": 8142, "role": "Acción principal (ej: VAMOS, NADAR, ABRIR)" },
+    { "text": "PALABRA 3 (MAYÚSCULAS)", "arasaacId": 3220, "role": "Continuidad o límite (ej: MÁS, PARAR, AGUA)" }
   ],
   "steps": [
     {
       "phase": "1. Enganche y Motivación",
-      "instruction": "Acción física concreta que debe realizar el adulto con el juguete.",
+      "instruction": "Acción física concreta que debe realizar el adulto con el juguete o en el lugar.",
       "adultScript": "Qué frase corta o sonido dice el adulto.",
       "tip": "Tip clínico clave."
     },
@@ -847,15 +857,16 @@ Estructura requerida:
 }
 
 IDs comunes de ARASAAC para referencia verificados:
-- Acciones: VAMOS (8142), PARAR (7196), ABRIR (24825), CERRAR (24976), ESPERAR (8109), JUGAR (23392), COMER (6456), BEBER (6061), DORMIR (6479)
+- Lugares/Entornos: LAGO (6022), PISCINA (30516), PLAYA (30518), PARQUE (2502), RÍO (6023), BOTE (2311), CASA (2328), ESCUELA (2382)
+- Acciones: VAMOS (8142), PARAR (7196), NADAR (6568), ABRIR (24825), CERRAR (24976), ESPERAR (8109), JUGAR (23392), COMER (6456), BEBER (6061), SALIR (6477), ENTRAR (6478)
 - Núcleo: QUIERO (5441), MÁS (3220), NO (5526), SÍ (5584), AYUDA (12252), MIRA (6564), DAME (17038)
-- Objetos/Juguetes: AUTO (2340), BURBUJAS (6945), BLOQUES (4935), PELOTA (3241), PLASTILINA (2529), AGUA (32464), GALLETA (8312)
+- Objetos/Sensorial: AGUA (32464), SOL (2570), ARENA (2697), AUTO (2340), BURBUJAS (6945), BLOQUES (4935), PELOTA (3241), PLASTILINA (2529), TOBOGÁN (2588)
 - Turnos/Social: MI TURNO (6632), TU TURNO (25790), COMPARTIR (15361), HOLA (6522), CHAO (6028), GRACIAS (8129)
 - Emociones: FELIZ (9907), CALMA (31310), ENOJADO (35539), CANSADO (35537), COSQUILLAS (5480)`;
 
-    const userPrompt = `Crea un juego de modelado CAA para ${patientName} utilizando: ${toyOrItem || contextMap[context] || 'juego cotidiano'}.`;
+    const userPrompt = `Crea un juego de modelado CAA para ${patientName}. ${idea ? `Idea o tema de la actividad: "${idea}".` : ''} ${toyOrItem ? `Elemento: "${toyOrItem}".` : ''} Nivel: ${levelMap[level] || 'Nivel 1'}. Selecciona 3 pictogramas temáticos altamente representativos.`;
 
-    const resolveVerifiedId = (text, fallbackId) => {
+    const resolveVerifiedIdAsync = async (text, fallbackId) => {
       if (!text) return fallbackId || 3220;
       const clean = text.trim().toUpperCase();
       const dict = {
@@ -868,13 +879,31 @@ IDs comunes de ARASAAC para referencia verificados:
         'ESPERAR': 8109, 'GALLETA': 8312, 'LECHE': 2445, 'MANZANA': 2462,
         'PAN': 2494, 'FELIZ': 9907, 'CALMA': 31310, 'COSQUILLAS': 5480,
         'CUIDADO': 35535, 'COMPARTIR': 15361, 'HOLA': 6522, 'CHAO': 6028,
-        'GRACIAS': 8129, 'DAME': 17038, 'MIRA': 6564
+        'GRACIAS': 8129, 'DAME': 17038, 'MIRA': 6564,
+        // Lugares y actividades comunes
+        'LAGO': 6022, 'PISCINA': 30516, 'PILETA': 30516, 'PLAYA': 30518,
+        'NADAR': 6568, 'RIO': 6023, 'RÍO': 6023, 'BOTE': 2311, 'BARCO': 2311,
+        'PARQUE': 2502, 'PLAZA': 2502, 'SOL': 2570, 'ARENA': 2697,
+        'TOBOGAN': 2588, 'TOBOGÁN': 2588, 'COLUMPIO': 2345, 'DINOSAURIO': 10471,
+        'SALIR': 6477, 'ENTRAR': 6478, 'CALOR': 6432, 'FRIO': 6434, 'FRÍO': 6434,
+        'BICICLETA': 2305, 'BICI': 2305, 'COCINAR': 6455, 'PIZZA': 2527
       };
       if (dict[clean]) return dict[clean];
       const match = ALL_PRESET_PICTOGRAMS.find(p => p.text.toUpperCase() === clean);
       if (match && match.arasaacId) return match.arasaacId;
       const partial = ALL_PRESET_PICTOGRAMS.find(p => p.text.toUpperCase().includes(clean) || clean.includes(p.text.toUpperCase()));
       if (partial && partial.arasaacId) return partial.arasaacId;
+      
+      // Dynamic lookup in ARASAAC offline and online
+      try {
+        const matches = await arasaac.searchPictograms(clean);
+        if (matches && matches.length > 0) {
+          const first = matches[0];
+          const foundId = first.arasaacId || (first._id ? Number(first._id) : null);
+          if (foundId) return foundId;
+        }
+      } catch (e) {}
+
       return fallbackId || 3220;
     };
 
@@ -891,19 +920,24 @@ IDs comunes de ARASAAC para referencia verificados:
       if (match) {
         const parsed = JSON.parse(match[0]);
         if (parsed && parsed.title && Array.isArray(parsed.pictograms)) {
+          const resolvedPics = await Promise.all(
+            parsed.pictograms.map(async (p) => {
+              const text = (p.text || '').toUpperCase();
+              const resolvedId = await resolveVerifiedIdAsync(text, Number(p.arasaacId));
+              return {
+                text,
+                role: p.role || 'Objetivo',
+                arasaacId: resolvedId
+              };
+            })
+          );
+
           return {
             id: `act-ai-${Date.now()}`,
             isAiGenerated: true,
             createdAt: new Date().toISOString(),
             ...parsed,
-            pictograms: parsed.pictograms.map(p => {
-              const text = (p.text || '').toUpperCase();
-              return {
-                text,
-                role: p.role || 'Objetivo',
-                arasaacId: resolveVerifiedId(text, Number(p.arasaacId))
-              };
-            })
+            pictograms: resolvedPics
           };
         }
       }
@@ -911,47 +945,81 @@ IDs comunes de ARASAAC para referencia verificados:
       console.warn('Error parsing AI activity JSON, returning fallback', e);
     }
 
+    // Context-aware fallback
+    const lowerIdea = (idea || toyOrItem || '').toLowerCase();
+    let fallbackPics = [
+      { text: (toyOrItem || 'JUGAR').toUpperCase(), arasaacId: 23392, role: 'Elemento de interés' },
+      { text: 'MÁS', arasaacId: 3220, role: 'Continuidad' },
+      { text: 'PARAR', arasaacId: 7196, role: 'Límite o plan B' }
+    ];
+
+    if (lowerIdea.includes('lago')) {
+      fallbackPics = [
+        { text: 'LAGO', arasaacId: 6022, role: 'Lugar de la actividad' },
+        { text: 'AGUA', arasaacId: 32464, role: 'Sensación y elemento' },
+        { text: 'VAMOS', arasaacId: 8142, role: 'Acción de avance' }
+      ];
+    } else if (lowerIdea.includes('piscina') || lowerIdea.includes('pileta')) {
+      fallbackPics = [
+        { text: 'PISCINA', arasaacId: 30516, role: 'Lugar del juego' },
+        { text: 'NADAR', arasaacId: 6568, role: 'Acción motora' },
+        { text: 'AGUA', arasaacId: 32464, role: 'Elemento sensorial' }
+      ];
+    } else if (lowerIdea.includes('playa') || lowerIdea.includes('mar')) {
+      fallbackPics = [
+        { text: 'PLAYA', arasaacId: 30518, role: 'Entorno natural' },
+        { text: 'ARENA', arasaacId: 2697, role: 'Textura' },
+        { text: 'VAMOS', arasaacId: 8142, role: 'Acción' }
+      ];
+    } else if (lowerIdea.includes('parque') || lowerIdea.includes('plaza')) {
+      fallbackPics = [
+        { text: 'PARQUE', arasaacId: 2502, role: 'Espacio al aire libre' },
+        { text: 'JUGAR', arasaacId: 23392, role: 'Actividad' },
+        { text: 'VAMOS', arasaacId: 8142, role: 'Desplazamiento' }
+      ];
+    }
+
+    const fallbackTitle = idea 
+      ? `Aventura: ${idea.charAt(0).toUpperCase() + idea.slice(1)}`
+      : `Juego Guiado con ${toyOrItem || 'Objetos Cotidianos'}`;
+
     return {
       id: `act-ai-${Date.now()}`,
-      title: `Juego Guiado con ${toyOrItem || 'Objetos Cotidianos'}`,
+      title: fallbackTitle,
       isAiGenerated: true,
-      summary: 'Actividad interactiva de modelado asistido para generar peticiones y pausas expectantes.',
+      summary: `Actividad interactiva de modelado asistido para ${idea ? `la experiencia "${idea}"` : 'aprovechar momentos cotidianos'}.`,
       levelLabel: levelMap[level] || 'Nivel 1: Explorador',
       contextLabel: contextMap[context] || 'Juegos',
       goalLabel: goalMap[goal] || 'Petición',
       duration: `${durationMinutes} min`,
-      pictograms: [
-        { text: (toyOrItem || 'JUGAR').toUpperCase(), arasaacId: resolveVerifiedId(toyOrItem || 'JUGAR', 23392), role: 'Elemento de interés' },
-        { text: 'MÁS', arasaacId: 3220, role: 'Continuidad' },
-        { text: 'PARAR', arasaacId: 7196, role: 'Límite o plan B' }
-      ],
+      pictograms: fallbackPics,
       steps: [
         {
           phase: '1. Enganche y Motivación',
-          instruction: `Inicia el juego con ${toyOrItem || 'el objeto'} de manera atractiva y divertida.`,
+          instruction: `Inicia la actividad de ${idea || toyOrItem || 'juego'} de manera alegre y atenta.`,
           adultScript: `¡Mira qué entretenido esto!`,
           tip: 'Asegúrate de que el niño esté mirando y disfrutando el momento.'
         },
         {
           phase: '2. Pausa Expectante',
-          instruction: 'Detén el juego y sostén el objeto. Espera 10 segundos con mirada cálida y sonrisa.',
+          instruction: 'Detén el movimiento y espera 10 segundos con mirada cálida y sonrisa.',
           adultScript: '',
           tip: 'No te apresures a preguntar. La pausa le da tiempo de procesar su deseo de comunicarse.'
         },
         {
           phase: '3. Modelado en el Comunicador',
-          instruction: 'Toca en la tablet el pictograma MÁS señalándolo con tu dedo.',
-          adultScript: '¡MÁS!',
+          instruction: `Toca en la tablet el pictograma ${fallbackPics[0].text} señalándolo con tu dedo.`,
+          adultScript: `¡${fallbackPics[0].text}!`,
           tip: 'Modela sin exigir que repita inmediatamente.'
         },
         {
           phase: '4. Recompensa Inmediata',
-          instruction: 'Apenas haya un intento comunicativo o toque la pantalla, reactiva el juego con entusiasmo.',
-          adultScript: '¡Sí, más juego para ti!',
+          instruction: 'Apenas haya un intento comunicativo o mire la pantalla, reactiva la diversión con entusiasmo.',
+          adultScript: '¡Sí, qué genial!',
           tip: 'Celebra su iniciativa con una sonrisa genuina.'
         }
       ],
-      planB: 'Si el niño se aleja o muestra molestia, modela con calma el pictograma PARAR: "Entiendo, paramos por ahora" y guarda el juego.'
+      planB: 'Si el niño se aleja o muestra molestia, modela con calma el pictograma PARAR: "Entiendo, paramos por ahora" y descansa.'
     };
   }
 };

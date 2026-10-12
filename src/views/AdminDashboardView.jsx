@@ -723,7 +723,7 @@ export default function AdminDashboardView() {
           {[
             { id: 'clients', label: 'Clientes y Suscripciones', icon: Users },
             { id: 'plans', label: 'Catálogo de Planes', icon: Layers },
-            { id: 'copilot', label: 'Copiloto IA Clínico (Llama 3.3)', icon: Bot },
+            { id: 'copilot', label: 'Copiloto IA Clínico', icon: Bot },
             { id: 'settings', label: 'Seguridad & API Key', icon: Settings }
           ].map((tab) => {
             const Icon = tab.icon;
@@ -1189,7 +1189,9 @@ export default function AdminDashboardView() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="font-black text-sm md:text-base">Motor Clínico: Meta LLaMA 3.3 (70B Instruct)</h4>
+                  <h4 className="font-black text-sm md:text-base">
+                    Motor Clínico: {modelsList.find(m => m.id === selectedModel)?.name || selectedModel}
+                  </h4>
                   <span className="text-[10px] font-black uppercase bg-emerald-400/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/30">
                     OpenRouter Oficial
                   </span>
@@ -1217,7 +1219,7 @@ export default function AdminDashboardView() {
             }`}>
               <span>
                 {aiConnectionStatus.success 
-                  ? `✓ Conexión exitosa con OpenRouter Llama 3.3 (70B) • Latencia: ${aiConnectionStatus.latency}ms` 
+                  ? `✓ Conexión exitosa con OpenRouter (${modelsList.find(m => m.id === selectedModel)?.name || selectedModel}) • Latencia: ${aiConnectionStatus.latency}ms` 
                   : `✕ Fallo de conexión: ${aiConnectionStatus.error}`}
               </span>
               <button onClick={() => setAiConnectionStatus(null)} className="text-slate-400 hover:text-slate-600">✕</button>

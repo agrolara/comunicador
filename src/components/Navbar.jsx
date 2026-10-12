@@ -166,12 +166,20 @@ export default function Navbar({
     <>
       {/* Top Android App Bar con Buscador Rápido de Pictogramas Integrado */}
       <header className="bg-[#ffffff] border-b border-[#c3c6d7] px-2 sm:px-4 py-2 flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs z-30 sticky top-0">
-        {/* Left: Brand Identity */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        {/* Left: Brand Identity (Click to return to main board) */}
+        <button
+          type="button"
+          onClick={() => {
+            if (onTabChange) onTabChange('main');
+            tts.playChime('pop');
+          }}
+          className="flex items-center gap-1.5 sm:gap-3 shrink-0 text-left cursor-pointer hover:opacity-85 active:scale-98 transition-all p-1 -m-1 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#004ac6]/30 group"
+          title="Volver al Tablero Principal de Pictogramas"
+        >
           <img
             src="/logo.png"
             alt="DanteVoz Logo"
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl object-cover shadow-sm border border-[#004ac6]/20 bg-white"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl object-cover shadow-sm border border-[#004ac6]/20 bg-white group-hover:scale-105 transition-transform"
           />
           <div>
             <h1 className="font-black text-xs sm:text-base md:text-lg text-[#111c2d] tracking-tight leading-tight flex items-center gap-1 sm:gap-1.5">
@@ -185,7 +193,7 @@ export default function Navbar({
               <span>Hecho con amor para mi hijo y toda la comunidad no verbal ❤️ ♾️</span>
             </span>
           </div>
-        </div>
+        </button>
 
         {/* Center: Buscador Rápido de Pictogramas */}
         <QuickSearch

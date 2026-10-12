@@ -207,6 +207,30 @@ export const CURATED_MODELS = [
   }
 ];
 
+// Discrete 1-2 letter code for non-intrusive model verification
+export function getModelDiscreteCode(modelId) {
+  if (!modelId) return 'IA';
+  const lower = modelId.toLowerCase();
+  if (lower.includes('nemotron')) return 'NM';
+  if (lower.includes('llama')) return 'ML';
+  if (lower.includes('gemma')) return 'GM';
+  if (lower.includes('gemini')) return 'GF';
+  if (lower.includes('deepseek')) return 'DS';
+  if (lower.includes('gpt')) return 'GP';
+  if (lower.includes('claude')) return 'CL';
+  if (lower.includes('mistral')) return 'MS';
+  if (lower.includes('qwen')) return 'QW';
+  if (lower.includes('inkling')) return 'IK';
+  if (lower.includes('liquid') || lower.includes('lfm')) return 'LQ';
+  if (lower.includes('apodex')) return 'AP';
+  if (lower.includes('dots')) return 'DT';
+
+  const parts = lower.split('/');
+  const p0 = (parts[0] || '')[0] || 'A';
+  const p1 = (parts[1] || '')[0] || 'I';
+  return (p0 + p1).toUpperCase().slice(0, 2);
+}
+
 export const aiService = {
   getApiKey() {
     try {
@@ -234,10 +258,18 @@ export const aiService = {
     }
   },
 
+  getDiscreteCode(modelId) {
+    return getModelDiscreteCode(modelId || this.getModel());
+  },
+
   setModel(model) {
     try {
       if (model && model.trim()) {
-        localStorage.setItem(STORAGE_KEY_MODEL, model.trim());
+        const trimmed = model.trim();
+        localStorage.setItem(STORAGE_KEY_MODEL, trimmed);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('danmax_model_changed', { detail: trimmed }));
+        }
       }
     } catch (e) {}
   },
@@ -594,5 +626,142 @@ Para cada meta, incluye:
       temperature: 0.6,
       maxTokens: 2500
     });
+  },
+
+  // 4. Generador de Rutinas Diarias con IA y Pictogramas ARASAAC
+  async generateRoutine({ topic, patientName = 'Dante', stepsCount = 5 }) {
+    const systemPrompt = `Eres un Terapeuta Clínico Ocupacional y Fonoaudiólogo Especialista en Comunicación Aumentativa y Alternativa (CAA) y Agendas Visuales con pictogramas ARASAAC.
+Tu tarea es generar una rutina visual paso a paso clara, secuencial y motivadora para un niño no verbal / TEA llamado ${patientName}.
+IMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto introductorio, sin explicaciones y sin bloques markdown como \`\`\`json. Solo el objeto JSON crudo.
+
+Estructura requerida:
+{
+  "title": "Nombre corto de la rutina en español (Ej: Visita al Dentista)",
+  "items": [
+    {
+      "text": "ACCIÓN EN MAYÚSCULAS (Ej: SALIR DE CASA)",
+      "time": "09:00",
+      "arasaacId": 2339
+    }
+  ]
+}
+
+IDs comunes de ARASAAC de referencia:
+- despertar: 8989, baño: 6929, lavarse los dientes: 6971, lavarse las manos: 8975, vestirse: 6627, desayunar: 4625
+- colegio/escuela: 32446, mochila: 2475, auto/viaje: 2339, jugar: 2439, guardar juguetes: 4935
+- almuerzo/comer: 2573, plaza/parque: 2517, médico/doctor: 6523, dentista: 2717, calma/respirar: 31310
+- cenar: 2573, bañarse: 6058, pijama: 2522, dormir: 6479, esperar/turno: 3288, escuchar: 2382, caminar: 2419`;
+
+    const userPrompt = `Crea una rutina de ${stepsCount} pasos para la siguiente actividad: "${topic}".`;
+
+    const rawResponse = await this.chatCompletion({
+      messages: [{ role: 'user', content: userPrompt }],
+      systemPrompt,
+      temperature: 0.5,
+      maxTokens: 1500
+    });
+
+    try {
+      const cleaned = rawResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
+          return {
+            id: `r-ai-${Date.now()}`,
+            title: parsed.title || topic,
+            isAiGenerated: true,
+            items: parsed.items.map((it, idx) => ({
+              id: `step-ai-${idx}-${Date.now()}`,
+              text: (it.text || `PASO ${idx + 1}`).toUpperCase(),
+              time: it.time || `0${8 + idx}:00`,
+              done: false,
+              arasaacId: Number(it.arasaacId) || 2439
+            }))
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Error parsing AI routine JSON, using fallback', e);
+    }
+
+    return {
+      id: `r-ai-${Date.now()}`,
+      title: topic,
+      isAiGenerated: true,
+      items: [
+        { id: `step-1-${Date.now()}`, text: 'PREPARARSE', time: '09:00', done: false, arasaacId: 6627 },
+        { id: `step-2-${Date.now()}`, text: topic.toUpperCase(), time: '09:30', done: false, arasaacId: 2439 },
+        { id: `step-3-${Date.now()}`, text: 'REGRESAR A CASA', time: '10:30', done: false, arasaacId: 2432 },
+        { id: `step-4-${Date.now()}`, text: 'DESCANSAR', time: '11:00', done: false, arasaacId: 6479 }
+      ]
+    };
+  },
+
+  // 5. Generador de Historias Sociales con IA (Método Carol Gray)
+  async generateSocialStory({ topic, patientName = 'Dante', stepsCount = 5 }) {
+    const systemPrompt = `Eres un Terapeuta Clínico y Fonoaudiólogo Especialista en Historias Sociales según el método oficial de Carol Gray para niños no verbales o dentro del espectro autista (TEA).
+Crea un cuento anticipatorio en primera persona ("Yo...", "A veces...", "Cuando...") con frases cortas, afirmativas, tranquilizadoras y empáticas.
+IMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto introductorio, sin explicaciones y sin bloques markdown como \`\`\`json. Solo el objeto JSON crudo.
+
+Estructura requerida:
+{
+  "title": "Nombre de la historia social en español (Ej: Cuando visito al Dentista)",
+  "steps": [
+    {
+      "text": "Frase empática y clara para el niño.",
+      "arasaacId": 2717
+    }
+  ]
+}
+
+IDs comunes de ARASAAC de referencia:
+- emociones: calma 23392, feliz 8020, enojado/frustrado 35539, asustado 2469, cansado 2623, dolor 2841
+- personas: familia 2397, mamá 2466, papá 2515, profesor 2831, doctor 6523, dentista 2717, amigos 32446
+- acciones: respirar 31310, pedir ayuda 4550, esperar 3288, escuchar 2382, parar 36914, hablar 2418, jugar 2439
+- lugares: casa 2432, escuela 32446, parque 2517, hospital 3116, peluquería 2855, supermercado 2587`;
+
+    const userPrompt = `Crea una historia social de ${stepsCount} pasos en primera persona para ayudar a ${patientName} con: "${topic}".`;
+
+    const rawResponse = await this.chatCompletion({
+      messages: [{ role: 'user', content: userPrompt }],
+      systemPrompt,
+      temperature: 0.6,
+      maxTokens: 1800
+    });
+
+    try {
+      const cleaned = rawResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed && Array.isArray(parsed.steps) && parsed.steps.length > 0) {
+          return {
+            id: `story-ai-${Date.now()}`,
+            title: parsed.title || topic,
+            isAiGenerated: true,
+            steps: parsed.steps.map((st, idx) => ({
+              text: st.text || `Paso ${idx + 1}`,
+              arasaacId: Number(st.arasaacId) || 23392
+            }))
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Error parsing AI social story JSON, using fallback', e);
+    }
+
+    return {
+      id: `story-ai-${Date.now()}`,
+      title: topic,
+      isAiGenerated: true,
+      steps: [
+        { text: `Hoy voy a participar en una actividad: ${topic}.`, arasaacId: 2439 },
+        { text: 'A veces las situaciones nuevas son diferentes, pero las personas me cuidan.', arasaacId: 2397 },
+        { text: 'Si necesito calma, puedo respirar hondo y pedir una pausa.', arasaacId: 31310 },
+        { text: 'Hago las cosas paso a paso a mi propio ritmo.', arasaacId: 3288 },
+        { text: '¡Todo saldrá muy bien y volveremos a casa tranquilos!', arasaacId: 8020 }
+      ]
+    };
   }
 };

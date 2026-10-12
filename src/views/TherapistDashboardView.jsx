@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { analytics } from '../services/analytics';
 import { tts } from '../services/tts';
-import { aiService } from '../services/ai';
+import { aiService, getModelDiscreteCode } from '../services/ai';
 
 export default function TherapistDashboardView() {
   const [stats, setStats] = useState(analytics.getStats());
@@ -34,6 +34,15 @@ export default function TherapistDashboardView() {
   const [newGoalText, setNewGoalText] = useState('');
   const [newGoalTarget, setNewGoalTarget] = useState(5);
   const [isAddingGoal, setIsAddingGoal] = useState(false);
+
+  // Active Model & Discrete Code State
+  const [activeModel, setActiveModel] = useState(() => aiService.getModel());
+  useEffect(() => {
+    const handler = (e) => setActiveModel(e.detail || aiService.getModel());
+    window.addEventListener('danmax_model_changed', handler);
+    return () => window.removeEventListener('danmax_model_changed', handler);
+  }, []);
+  const discreteCode = getModelDiscreteCode(activeModel);
 
   // AI Copilot States
   const [showAiCopilotModal, setShowAiCopilotModal] = useState(false);
@@ -310,7 +319,12 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
             className="flex items-center gap-1.5 px-3.5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-2xl font-black text-xs cursor-pointer shadow-xs active:scale-95 transition-all"
           >
             <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-            <span>Copiloto IA (Llama 3.3)</span>
+            <div className="flex items-center gap-1">
+              <span>Copiloto IA</span>
+              <span className="text-[10px] font-mono font-black bg-white/25 px-1.5 py-0.5 rounded text-white tracking-wider">
+                {discreteCode}
+              </span>
+            </div>
           </button>
           <button
             onClick={handleExportJSON}
@@ -850,8 +864,8 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
                 <div>
                   <h3 className="font-black text-slate-900 text-base md:text-lg flex items-center gap-2">
                     <span>Copiloto IA Clínico</span>
-                    <span className="text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
-                      Meta LLaMA 3.3 (70B)
+                    <span className="text-[10px] font-mono font-black uppercase bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
+                      {discreteCode}
                     </span>
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
@@ -916,7 +930,7 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
                       className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-black text-xs cursor-pointer shadow-xs active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5"
                     >
                       <Sparkles className={`w-3.5 h-3.5 ${aiLoading ? 'animate-spin' : ''}`} />
-                      <span>{aiLoading ? 'Redactando con Llama 3.3...' : 'Generar Informe con IA'}</span>
+                      <span>{aiLoading ? 'Redactando con IA...' : 'Generar Informe con IA'}</span>
                     </button>
                   </div>
                 </div>

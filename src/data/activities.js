@@ -104,7 +104,7 @@ export const DEFAULT_ACTIVITIES = [
     goalLabel: 'Control de Límites y Rechazo',
     duration: '5 min',
     pictograms: [
-      { text: 'COSQUILLAS', arasaacId: 23392, role: 'Juego motor' },
+      { text: 'COSQUILLAS', arasaacId: 5480, role: 'Juego motor' },
       { text: 'PARAR', arasaacId: 7196, role: 'Frenar inmediatamente' },
       { text: 'MÁS', arasaacId: 3220, role: 'Pedir otra vez' }
     ],

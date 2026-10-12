@@ -18,10 +18,13 @@ import {
   Lightbulb,
   X,
   Compass,
-  Smile
+  Smile,
+  Search,
+  Loader2
 } from 'lucide-react';
 import { tts } from '../services/tts';
 import { aiService } from '../services/ai';
+import { arasaac } from '../services/arasaac.js';
 import confetti from 'canvas-confetti';
 
 const CUSTOM_ACTIVITIES_KEY = 'danmax_custom_activities';
@@ -62,11 +65,12 @@ const ARASAAC_VERIFIED_DICT = {
   'PAN': 2494,
   'FELIZ': 9907,
   'CALMA': 31310,
-  'COSQUILLAS': 23392,
+  'COSQUILLAS': 5480,
   'CUIDADO': 35535
 };
 
-export function getVerifiedArasaacId(text, defaultId) {
+export function getVerifiedArasaacId(text, defaultId, isUserSelected) {
+  if (isUserSelected && defaultId) return defaultId;
   if (!text) return defaultId || 3220;
   const clean = text.trim().toUpperCase();
 
@@ -102,7 +106,7 @@ export default function ActivitiesView({ onNavigateTab }) {
               ...a,
               pictograms: (a.pictograms || []).map(p => ({
                 ...p,
-                arasaacId: getVerifiedArasaacId(p.text, p.arasaacId)
+                arasaacId: getVerifiedArasaacId(p.text, p.arasaacId, p.isUserSelected)
               }))
             }));
           return [...customOnly, ...DEFAULT_ACTIVITIES];
@@ -154,8 +158,119 @@ export default function ActivitiesView({ onNavigateTab }) {
   // Dynamically resolve and verify every pictogram against ARASAAC catalog
   const resolvedPictograms = (currentActivity?.pictograms || []).map(pic => ({
     ...pic,
-    arasaacId: getVerifiedArasaacId(pic.text, pic.arasaacId)
+    arasaacId: getVerifiedArasaacId(pic.text, pic.arasaacId, pic.isUserSelected)
   }));
+
+  // Change Pictogram Modal State
+  const [changePicModal, setChangePicModal] = useState({
+    isOpen: false,
+    picIndex: -1,
+    pic: null
+  });
+  const [picSearchQuery, setPicSearchQuery] = useState('');
+  const [picSearchResults, setPicSearchResults] = useState([]);
+  const [isSearchingPic, setIsSearchingPic] = useState(false);
+
+  const handleOpenChangePicModal = (index, pic) => {
+    tts.playChime('pop');
+    setChangePicModal({
+      isOpen: true,
+      picIndex: index,
+      pic
+    });
+    const initialQuery = pic?.text || '';
+    setPicSearchQuery(initialQuery);
+    executeSearchForModal(initialQuery);
+  };
+
+  const executeSearchForModal = async (term) => {
+    if (!term || !term.trim()) {
+      setPicSearchResults([]);
+      return;
+    }
+    setIsSearchingPic(true);
+    const clean = term.trim().toLowerCase();
+
+    try {
+      // 1. Search local preset pictograms
+      const localMatches = ALL_PRESET_PICTOGRAMS.filter(p => 
+        p.text.toLowerCase().includes(clean) || clean.includes(p.text.toLowerCase())
+      ).map(p => ({
+        arasaacId: p.arasaacId,
+        text: p.text,
+        source: 'Catálogo de la app'
+      }));
+
+      // 2. Search online / offline ARASAAC
+      const onlineMatches = await arasaac.searchPictograms(clean);
+      const formattedOnline = (onlineMatches || []).map(item => ({
+        arasaacId: item.arasaacId || (item._id ? Number(item._id) : 3220),
+        text: (item.keyword || item.text || clean).toUpperCase(),
+        source: 'ARASAAC Oficial'
+      }));
+
+      // Combine and deduplicate by arasaacId
+      const combined = [...localMatches, ...formattedOnline];
+      const seen = new Set();
+      const deduped = [];
+      for (const item of combined) {
+        if (item.arasaacId && !seen.has(item.arasaacId)) {
+          seen.add(item.arasaacId);
+          deduped.push(item);
+        }
+      }
+
+      setPicSearchResults(deduped);
+    } catch (e) {
+      console.warn('Error searching pictograms for modal:', e);
+      setPicSearchResults([]);
+    } finally {
+      setIsSearchingPic(false);
+    }
+  };
+
+  const handleSelectReplacementPictogram = (selectedItem) => {
+    if (!currentActivity || changePicModal.picIndex < 0) return;
+
+    tts.playChime('pop');
+    const updatedPictograms = [...(currentActivity.pictograms || [])];
+    const targetIdx = changePicModal.picIndex;
+
+    updatedPictograms[targetIdx] = {
+      ...updatedPictograms[targetIdx],
+      text: selectedItem.text || updatedPictograms[targetIdx].text,
+      arasaacId: selectedItem.arasaacId,
+      isUserSelected: true
+    };
+
+    const updatedActivity = {
+      ...currentActivity,
+      pictograms: updatedPictograms
+    };
+
+    const newActivities = activities.map(a => a.id === currentActivity.id ? updatedActivity : a);
+    setActivities(newActivities);
+
+    // Persist to localStorage
+    const customOnly = newActivities.filter(a => a.isAiGenerated);
+    localStorage.setItem(CUSTOM_ACTIVITIES_KEY, JSON.stringify(customOnly));
+
+    // Update active game session in localStorage if active
+    try {
+      const active = localStorage.getItem(ACTIVE_GAME_KEY);
+      if (active) {
+        const parsed = JSON.parse(active);
+        if (parsed.id === currentActivity.id) {
+          localStorage.setItem(ACTIVE_GAME_KEY, JSON.stringify(updatedActivity));
+        }
+      }
+    } catch (e) {}
+
+    // Close modal & confirm
+    setChangePicModal({ isOpen: false, picIndex: -1, pic: null });
+    tts.speak(`Pictograma cambiado a ${selectedItem.text}`);
+    tts.playChime('success');
+  };
 
   // Filtered Activities
   const filteredActivities = activities.filter(a => {
@@ -464,34 +579,59 @@ export default function ActivitiesView({ onNavigateTab }) {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {resolvedPictograms.map((pic, idx) => (
-                <button
+                <div
                   key={idx}
-                  onClick={() => handleSpeakPictogram(pic)}
-                  type="button"
-                  className="p-3 bg-slate-50 border-2 border-slate-200 hover:border-[#004ac6] rounded-2xl flex items-center gap-3 text-left transition-all cursor-pointer group active:scale-98"
+                  className="p-3.5 bg-slate-50 border-2 border-slate-200 hover:border-[#004ac6] rounded-2xl flex flex-col justify-between transition-all group shadow-2xs"
                 >
-                  <div className="w-14 h-14 bg-white p-1 rounded-xl border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <img
-                      src={`https://static.arasaac.org/pictograms/${pic.arasaacId}/${pic.arasaacId}_300.png`}
-                      alt={pic.text}
-                      className="w-12 h-12 object-contain"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://static.arasaac.org/pictograms/3220/3220_300.png';
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <span className="font-black text-sm md:text-base text-slate-900 block leading-tight">
-                      {pic.text}
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-bold block mt-0.5 leading-tight">
-                      {pic.role || 'Objetivo'}
-                    </span>
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSpeakPictogram(pic)}
+                    className="flex items-center gap-3 text-left w-full cursor-pointer active:scale-98 transition-transform"
+                    title="Toca para escuchar"
+                  >
+                    <div className="w-14 h-14 bg-white p-1 rounded-xl border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                      <img
+                        src={`https://static.arasaac.org/pictograms/${pic.arasaacId}/${pic.arasaacId}_300.png`}
+                        alt={pic.text}
+                        className="w-12 h-12 object-contain"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = 'https://static.arasaac.org/pictograms/3220/3220_300.png';
+                        }}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="font-black text-sm md:text-base text-slate-900 block leading-tight truncate">
+                        {pic.text}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-bold block mt-0.5 leading-tight">
+                        {pic.role || 'Objetivo'}
+                      </span>
+                    </div>
+                  </button>
+
+                  {currentActivity.isAiGenerated && (
+                    <div className="mt-2.5 pt-2 border-t border-slate-200/80 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-bold">
+                        ID: #{pic.arasaacId}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenChangePicModal(idx, pic);
+                        }}
+                        className="px-2.5 py-1 bg-white hover:bg-blue-50 border border-blue-200 hover:border-[#004ac6] text-[#004ac6] rounded-lg text-xs font-black flex items-center gap-1 shadow-2xs cursor-pointer transition-all active:scale-95"
+                        title="Cambiar y buscar el pictograma correcto"
+                      >
+                        <Search className="w-3 h-3 text-[#004ac6]" />
+                        <span>Cambiar</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -734,6 +874,138 @@ export default function ActivitiesView({ onNavigateTab }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Cambiar y Buscar Pictograma Correcto */}
+      {changePicModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border-2 border-slate-200 max-w-xl w-full p-5 md:p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-200 text-[#004ac6] flex items-center justify-center shrink-0 shadow-2xs">
+                  <Search className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base md:text-lg">
+                    Cambiar Pictograma
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Buscando reemplazo para <strong className="text-indigo-600">"{changePicModal.pic?.text}"</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setChangePicModal({ isOpen: false, picIndex: -1, pic: null })}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm p-1 cursor-pointer rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                executeSearchForModal(picSearchQuery);
+              }}
+              className="flex items-center gap-2"
+            >
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={picSearchQuery}
+                  onChange={(e) => {
+                    setPicSearchQuery(e.target.value);
+                    executeSearchForModal(e.target.value);
+                  }}
+                  placeholder="Escribe la palabra (ej: cosquillas, auto, pelota)..."
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-xs focus:border-[#004ac6] focus:bg-white focus:outline-none transition-all"
+                  autoFocus
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-2.5 bg-[#004ac6] hover:bg-blue-700 text-white rounded-xl font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95 shrink-0"
+              >
+                Buscar
+              </button>
+            </form>
+
+            {/* Results Grid */}
+            <div className="flex-1 overflow-y-auto pr-1 min-h-[220px] max-h-[50vh]">
+              {isSearchingPic ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#004ac6]" />
+                  <span className="text-xs font-bold">Buscando pictogramas en ARASAAC...</span>
+                </div>
+              ) : picSearchResults.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {picSearchResults.map((item) => {
+                    const isCurrent = item.arasaacId === changePicModal.pic?.arasaacId;
+                    return (
+                      <button
+                        key={`${item.arasaacId}-${item.text}`}
+                        type="button"
+                        onClick={() => handleSelectReplacementPictogram(item)}
+                        className={`p-2.5 rounded-2xl border-2 flex flex-col items-center gap-2 text-center transition-all cursor-pointer group hover:scale-[1.02] active:scale-98 ${
+                          isCurrent
+                            ? 'bg-indigo-50/70 border-[#004ac6] ring-2 ring-indigo-200'
+                            : 'bg-slate-50 hover:bg-blue-50/50 border-slate-200 hover:border-[#004ac6]'
+                        }`}
+                      >
+                        <div className="w-16 h-16 bg-white p-1 rounded-xl border border-slate-200 flex items-center justify-center shadow-2xs group-hover:shadow-xs transition-all">
+                          <img
+                            src={`https://static.arasaac.org/pictograms/${item.arasaacId}/${item.arasaacId}_300.png`}
+                            alt={item.text}
+                            className="w-14 h-14 object-contain"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://static.arasaac.org/pictograms/3220/3220_300.png';
+                            }}
+                          />
+                        </div>
+                        <div className="w-full">
+                          <span className="font-black text-xs text-slate-900 block truncate leading-tight">
+                            {item.text}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
+                            ID: #{item.arasaacId}
+                          </span>
+                        </div>
+                        {isCurrent ? (
+                          <span className="text-[10px] font-black uppercase bg-[#004ac6] text-white px-2 py-0.5 rounded-md">
+                            Actual
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black text-[#004ac6] group-hover:underline">
+                            Seleccionar
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-slate-400 space-y-1">
+                  <p className="text-xs font-bold">No se encontraron pictogramas para "{picSearchQuery}"</p>
+                  <p className="text-[11px] text-slate-400">Intenta buscar con otra palabra (ej: cosquillas, risa, jugar).</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end border-t border-slate-100 pt-3">
+              <button
+                type="button"
+                onClick={() => setChangePicModal({ isOpen: false, picIndex: -1, pic: null })}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-xs cursor-pointer transition-all"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

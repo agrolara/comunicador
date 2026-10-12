@@ -851,7 +851,7 @@ IDs comunes de ARASAAC para referencia verificados:
 - Núcleo: QUIERO (5441), MÁS (3220), NO (5526), SÍ (5584), AYUDA (12252), MIRA (6564), DAME (17038)
 - Objetos/Juguetes: AUTO (2340), BURBUJAS (6945), BLOQUES (4935), PELOTA (3241), PLASTILINA (2529), AGUA (32464), GALLETA (8312)
 - Turnos/Social: MI TURNO (6632), TU TURNO (25790), COMPARTIR (15361), HOLA (6522), CHAO (6028), GRACIAS (8129)
-- Emociones: FELIZ (9907), CALMA (31310), ENOJADO (35539), CANSADO (35537), COSQUILLAS (23392)`;
+- Emociones: FELIZ (9907), CALMA (31310), ENOJADO (35539), CANSADO (35537), COSQUILLAS (5480)`;
 
     const userPrompt = `Crea un juego de modelado CAA para ${patientName} utilizando: ${toyOrItem || contextMap[context] || 'juego cotidiano'}.`;
 
@@ -866,7 +866,7 @@ IDs comunes de ARASAAC para referencia verificados:
         'BURBUJAS': 6945, 'AUTO': 2340, 'AUTOS': 2340, 'PELOTA': 3241,
         'BLOQUES': 4935, 'PLASTILINA': 2529, 'MI TURNO': 6632, 'TU TURNO': 25790,
         'ESPERAR': 8109, 'GALLETA': 8312, 'LECHE': 2445, 'MANZANA': 2462,
-        'PAN': 2494, 'FELIZ': 9907, 'CALMA': 31310, 'COSQUILLAS': 23392,
+        'PAN': 2494, 'FELIZ': 9907, 'CALMA': 31310, 'COSQUILLAS': 5480,
         'CUIDADO': 35535, 'COMPARTIR': 15361, 'HOLA': 6522, 'CHAO': 6028,
         'GRACIAS': 8129, 'DAME': 17038, 'MIRA': 6564
       };

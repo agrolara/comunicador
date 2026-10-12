@@ -150,5 +150,7 @@ export const OFFLINE_ARASAAC_CATALOG = {
   "disculpa": 11625,
   "te quiero": 5441,
   "te amo": 8020,
-  "bien": 5397
+  "bien": 5397,
+  "cosquillas": 5480,
+  "hacer cosquillas": 5480
 };

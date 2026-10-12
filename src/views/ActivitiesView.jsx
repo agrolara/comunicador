@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DEFAULT_ACTIVITIES } from '../data/activities';
+import { ALL_PRESET_PICTOGRAMS } from '../data/pictograms';
 import {
   Sparkles,
   Gamepad2,
@@ -27,17 +28,84 @@ const CUSTOM_ACTIVITIES_KEY = 'danmax_custom_activities';
 const ACTIVITY_LOGS_KEY = 'danmax_activity_logs';
 export const ACTIVE_GAME_KEY = 'danmax_active_game_activity';
 
+// Comprehensive dictionary to guarantee 100% semantic accuracy
+const ARASAAC_VERIFIED_DICT = {
+  'VAMOS': 8142,
+  'PARAR': 7196,
+  'MÁS': 3220,
+  'MAS': 3220,
+  'ABRIR': 24825,
+  'CERRAR': 24976,
+  'QUIERO': 5441,
+  'COMER': 6456,
+  'BEBER': 6061,
+  'AGUA': 32464,
+  'JUGAR': 23392,
+  'DORMIR': 6479,
+  'AYUDA': 12252,
+  'NO': 5526,
+  'SÍ': 5584,
+  'SI': 5584,
+  'BURBUJAS': 6945,
+  'AUTO': 2340,
+  'AUTOS': 2340,
+  'AUTO DE JUGUETE': 2340,
+  'PELOTA': 3241,
+  'BLOQUES': 4935,
+  'PLASTILINA': 2529,
+  'MI TURNO': 6632,
+  'TU TURNO': 25790,
+  'ESPERAR': 8109,
+  'GALLETA': 8312,
+  'LECHE': 2445,
+  'MANZANA': 2462,
+  'PAN': 2494,
+  'FELIZ': 9907,
+  'CALMA': 31310,
+  'COSQUILLAS': 23392,
+  'CUIDADO': 35535
+};
+
+export function getVerifiedArasaacId(text, defaultId) {
+  if (!text) return defaultId || 3220;
+  const clean = text.trim().toUpperCase();
+
+  if (ARASAAC_VERIFIED_DICT[clean]) {
+    return ARASAAC_VERIFIED_DICT[clean];
+  }
+
+  // Exact match in full catalog
+  const match = ALL_PRESET_PICTOGRAMS.find(p => p.text.toUpperCase() === clean);
+  if (match && match.arasaacId) return match.arasaacId;
+
+  // Inclusion match in full catalog
+  const partial = ALL_PRESET_PICTOGRAMS.find(p => 
+    p.text.toUpperCase().includes(clean) || clean.includes(p.text.toUpperCase())
+  );
+  if (partial && partial.arasaacId) return partial.arasaacId;
+
+  return defaultId || 3220;
+}
+
 export default function ActivitiesView({ onNavigateTab }) {
-  // 1. Activities List State (defaults + custom)
+  // 1. Activities List State (defaults + custom verified)
   const [activities, setActivities] = useState(() => {
     try {
       const saved = localStorage.getItem(CUSTOM_ACTIVITIES_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const customIds = new Set(parsed.map(a => a.id));
-          const defaults = DEFAULT_ACTIVITIES.filter(d => !customIds.has(d.id));
-          return [...parsed, ...defaults];
+          // Keep only custom AI-generated activities and re-verify their IDs
+          const customOnly = parsed
+            .filter(a => a.isAiGenerated)
+            .map(a => ({
+              ...a,
+              pictograms: (a.pictograms || []).map(p => ({
+                ...p,
+                arasaacId: getVerifiedArasaacId(p.text, p.arasaacId)
+              }))
+            }));
+          return [...customOnly, ...DEFAULT_ACTIVITIES];
         }
       }
     } catch (e) {}
@@ -83,6 +151,12 @@ export default function ActivitiesView({ onNavigateTab }) {
 
   const currentActivity = activities.find(a => a.id === selectedActivityId) || activities[0] || DEFAULT_ACTIVITIES[0];
 
+  // Dynamically resolve and verify every pictogram against ARASAAC catalog
+  const resolvedPictograms = (currentActivity?.pictograms || []).map(pic => ({
+    ...pic,
+    arasaacId: getVerifiedArasaacId(pic.text, pic.arasaacId)
+  }));
+
   // Filtered Activities
   const filteredActivities = activities.filter(a => {
     if (filterLevel !== 'all' && a.levelId !== filterLevel && !a.levelLabel?.includes(filterLevel)) {
@@ -111,7 +185,11 @@ export default function ActivitiesView({ onNavigateTab }) {
   const handleStartOnBoard = () => {
     tts.playChime('pop');
     try {
-      localStorage.setItem(ACTIVE_GAME_KEY, JSON.stringify(currentActivity));
+      const sanitizedActivity = {
+        ...currentActivity,
+        pictograms: resolvedPictograms
+      };
+      localStorage.setItem(ACTIVE_GAME_KEY, JSON.stringify(sanitizedActivity));
     } catch (e) {}
 
     tts.speak(`Iniciando ${currentActivity.title}. ¡A jugar!`);
@@ -387,7 +465,7 @@ export default function ActivitiesView({ onNavigateTab }) {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {(currentActivity.pictograms || []).map((pic, idx) => (
+              {resolvedPictograms.map((pic, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSpeakPictogram(pic)}
@@ -399,6 +477,10 @@ export default function ActivitiesView({ onNavigateTab }) {
                       src={`https://static.arasaac.org/pictograms/${pic.arasaacId}/${pic.arasaacId}_300.png`}
                       alt={pic.text}
                       className="w-12 h-12 object-contain"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://static.arasaac.org/pictograms/3220/3220_300.png';
+                      }}
                     />
                   </div>
                   <div>

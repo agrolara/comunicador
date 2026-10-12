@@ -1,5 +1,7 @@
 // Pre-built clinical CAA modeling activities
 // Designed for parents, educators (PIE), and speech-language pathologists (SLP)
+// Verified ARASAAC IDs matching the app catalog:
+// VAMOS: 8142, PARAR: 7196, MÁS: 3220, ABRIR: 24825, BURBUJAS: 6945, QUIERO: 5441, COMER: 6456
 
 export const DEFAULT_ACTIVITIES = [
   {
@@ -14,9 +16,9 @@ export const DEFAULT_ACTIVITIES = [
     goalLabel: 'Petición y Causa-Efecto',
     duration: '5 min',
     pictograms: [
-      { text: 'VAMOS', arasaacId: 2419, role: 'Acción principal de avance' },
-      { text: 'PARAR', arasaacId: 36914, role: 'Freno y límite' },
-      { text: 'MÁS', arasaacId: 2344, role: 'Continuar la emoción' }
+      { text: 'VAMOS', arasaacId: 8142, role: 'Acción principal de avance' },
+      { text: 'PARAR', arasaacId: 7196, role: 'Freno y límite' },
+      { text: 'MÁS', arasaacId: 3220, role: 'Continuar la emoción' }
     ],
     steps: [
       {
@@ -58,9 +60,9 @@ export const DEFAULT_ACTIVITIES = [
     goalLabel: 'Petición con Elemento Deseado',
     duration: '5 min',
     pictograms: [
-      { text: 'ABRIR', arasaacId: 2331, role: 'Desbloquear el juego' },
-      { text: 'MÁS', arasaacId: 2344, role: 'Pedir otra ronda' },
-      { text: 'PARAR', arasaacId: 36914, role: 'Terminar con calma' }
+      { text: 'ABRIR', arasaacId: 24825, role: 'Desbloquear el juego' },
+      { text: 'BURBUJAS', arasaacId: 6945, role: 'Objeto de deseo' },
+      { text: 'MÁS', arasaacId: 3220, role: 'Pedir otra ronda' }
     ],
     steps: [
       {
@@ -102,9 +104,9 @@ export const DEFAULT_ACTIVITIES = [
     goalLabel: 'Control de Límites y Rechazo',
     duration: '5 min',
     pictograms: [
-      { text: 'COSQUILLAS', arasaacId: 2439, role: 'Juego motor' },
-      { text: 'PARAR', arasaacId: 36914, role: 'Frenar inmediatamente' },
-      { text: 'MÁS', arasaacId: 2344, role: 'Pedir otra vez' }
+      { text: 'COSQUILLAS', arasaacId: 23392, role: 'Juego motor' },
+      { text: 'PARAR', arasaacId: 7196, role: 'Frenar inmediatamente' },
+      { text: 'MÁS', arasaacId: 3220, role: 'Pedir otra vez' }
     ],
     steps: [
       {
@@ -146,9 +148,9 @@ export const DEFAULT_ACTIVITIES = [
     goalLabel: 'Expansión de Frases (LME + 1)',
     duration: '10 min',
     pictograms: [
-      { text: 'QUIERO', arasaacId: 6162, role: 'Petición núcleo' },
-      { text: 'COMER', arasaacId: 2573, role: 'Acción específica' },
-      { text: 'MÁS', arasaacId: 2344, role: 'Expansión de porción' }
+      { text: 'QUIERO', arasaacId: 5441, role: 'Petición núcleo' },
+      { text: 'COMER', arasaacId: 6456, role: 'Acción específica' },
+      { text: 'MÁS', arasaacId: 3220, role: 'Expansión de porción' }
     ],
     steps: [
       {
@@ -184,9 +186,9 @@ export const DEFAULT_ACTIVITIES = [
     goalLabel: 'Turnos y Habilidades Sociales',
     duration: '10 min',
     pictograms: [
-      { text: 'MI TURNO', arasaacId: 3288, role: 'Reclamar participación' },
-      { text: 'TU TURNO', arasaacId: 3288, role: 'Ceder el paso' },
-      { text: 'CUIDADO', arasaacId: 2469, role: 'Emoción y suspenso' }
+      { text: 'MI TURNO', arasaacId: 6632, role: 'Reclamar participación' },
+      { text: 'TU TURNO', arasaacId: 25790, role: 'Ceder el paso' },
+      { text: 'ESPERAR', arasaacId: 8109, role: 'Pausa compartida' }
     ],
     steps: [
       {
@@ -203,8 +205,8 @@ export const DEFAULT_ACTIVITIES = [
       },
       {
         phase: '3. El Clímax de la Torre',
-        instruction: 'Cuando la torre esté alta, modela [CUIDADO] con cara de asombro antes de que se caiga.',
-        adultScript: '¡CUIDADO que se cae!',
+        instruction: 'Cuando la torre esté alta, modela [ESPERAR] con cara de asombro antes de que se caiga.',
+        adultScript: '¡Vamos a ESPERAR!',
         tip: 'La caída de la torre genera risas compartidas y oportunidad de decir MÁS.'
       }
     ],

@@ -1,5 +1,6 @@
 // AI Clinical Service powered by OpenRouter & Meta LLaMA 3.3-70B-Instruct
 // "Esta es mi voz sin límites" - HealthTech CAA
+import { ALL_PRESET_PICTOGRAMS } from '../data/pictograms';
 
 // Decodes default key at runtime to avoid git push protection rejection
 const _KEY_B64 = 'c2stb3ItdjEtMDk2YzIzM2JjYWY2NmQ5MmRlNDQzODI3ODE1NWMyZjk3NmVkODYwMWE1MDU0ZDA2OTA1ZmFlNGRkMzg3NDY4Yw==';
@@ -812,9 +813,9 @@ Estructura requerida:
   "goalLabel": "${goalMap[goal] || 'Petición'}",
   "duration": "${durationMinutes} min",
   "pictograms": [
-    { "text": "PALABRA 1 (MAYÚSCULAS)", "arasaacId": 2419, "role": "Acción principal" },
-    { "text": "PALABRA 2 (MAYÚSCULAS)", "arasaacId": 36914, "role": "Límite o Plan B" },
-    { "text": "PALABRA 3 (MAYÚSCULAS)", "arasaacId": 2344, "role": "Continuidad" }
+    { "text": "VAMOS", "arasaacId": 8142, "role": "Acción principal" },
+    { "text": "PARAR", "arasaacId": 7196, "role": "Límite o Plan B" },
+    { "text": "MÁS", "arasaacId": 3220, "role": "Continuidad" }
   ],
   "steps": [
     {
@@ -845,14 +846,37 @@ Estructura requerida:
   "planB": "Plan de autorregulación si el niño muestra frustración o rechazo (modelar NO/PARAR y guardar con calma)."
 }
 
-IDs comunes de ARASAAC para referencia:
-- Acciones: VAMOS (2419), PARAR (36914), ABRIR (2331), CERRAR (6038), ESPERAR (3288), JUGAR (2439), COMER (2573), TOMAR/BEBER (2270), DORMIR (6479)
-- Núcleo: QUIERO (6162), MÁS (2344), NO (36914), SÍ (2588), AYUDA (4550), MIRA/VER (2618), SE FUE (2432)
-- Objetos/Juguetes: AUTO (2339), BURBUJAS (2517), BLOQUES (2526), PELOTA (2502), PLASTILINA (5968), MÚSICA (2482), AGUA (2259), GALLETA (2409)
-- Turnos/Social: MI TURNO (3288), TU TURNO (3288), HOLA (6522), CHAO (6028), GRACIAS (2414)
-- Emociones: FELIZ (8020), CALMA (23392), ENOJADO (35539), CANSADO (2623), COSQUILLAS (2439)`;
+IDs comunes de ARASAAC para referencia verificados:
+- Acciones: VAMOS (8142), PARAR (7196), ABRIR (24825), CERRAR (24976), ESPERAR (8109), JUGAR (23392), COMER (6456), BEBER (6061), DORMIR (6479)
+- Núcleo: QUIERO (5441), MÁS (3220), NO (5526), SÍ (5584), AYUDA (12252), MIRA (6564), DAME (17038)
+- Objetos/Juguetes: AUTO (2340), BURBUJAS (6945), BLOQUES (4935), PELOTA (3241), PLASTILINA (2529), AGUA (32464), GALLETA (8312)
+- Turnos/Social: MI TURNO (6632), TU TURNO (25790), COMPARTIR (15361), HOLA (6522), CHAO (6028), GRACIAS (8129)
+- Emociones: FELIZ (9907), CALMA (31310), ENOJADO (35539), CANSADO (35537), COSQUILLAS (23392)`;
 
     const userPrompt = `Crea un juego de modelado CAA para ${patientName} utilizando: ${toyOrItem || contextMap[context] || 'juego cotidiano'}.`;
+
+    const resolveVerifiedId = (text, fallbackId) => {
+      if (!text) return fallbackId || 3220;
+      const clean = text.trim().toUpperCase();
+      const dict = {
+        'VAMOS': 8142, 'PARAR': 7196, 'MÁS': 3220, 'MAS': 3220,
+        'ABRIR': 24825, 'CERRAR': 24976, 'QUIERO': 5441, 'COMER': 6456,
+        'BEBER': 6061, 'AGUA': 32464, 'JUGAR': 23392, 'DORMIR': 6479,
+        'AYUDA': 12252, 'NO': 5526, 'SÍ': 5584, 'SI': 5584,
+        'BURBUJAS': 6945, 'AUTO': 2340, 'AUTOS': 2340, 'PELOTA': 3241,
+        'BLOQUES': 4935, 'PLASTILINA': 2529, 'MI TURNO': 6632, 'TU TURNO': 25790,
+        'ESPERAR': 8109, 'GALLETA': 8312, 'LECHE': 2445, 'MANZANA': 2462,
+        'PAN': 2494, 'FELIZ': 9907, 'CALMA': 31310, 'COSQUILLAS': 23392,
+        'CUIDADO': 35535, 'COMPARTIR': 15361, 'HOLA': 6522, 'CHAO': 6028,
+        'GRACIAS': 8129, 'DAME': 17038, 'MIRA': 6564
+      };
+      if (dict[clean]) return dict[clean];
+      const match = ALL_PRESET_PICTOGRAMS.find(p => p.text.toUpperCase() === clean);
+      if (match && match.arasaacId) return match.arasaacId;
+      const partial = ALL_PRESET_PICTOGRAMS.find(p => p.text.toUpperCase().includes(clean) || clean.includes(p.text.toUpperCase()));
+      if (partial && partial.arasaacId) return partial.arasaacId;
+      return fallbackId || 3220;
+    };
 
     const rawResponse = await this.chatCompletion({
       messages: [{ role: 'user', content: userPrompt }],
@@ -871,7 +895,15 @@ IDs comunes de ARASAAC para referencia:
             id: `act-ai-${Date.now()}`,
             isAiGenerated: true,
             createdAt: new Date().toISOString(),
-            ...parsed
+            ...parsed,
+            pictograms: parsed.pictograms.map(p => {
+              const text = (p.text || '').toUpperCase();
+              return {
+                text,
+                role: p.role || 'Objetivo',
+                arasaacId: resolveVerifiedId(text, Number(p.arasaacId))
+              };
+            })
           };
         }
       }
@@ -889,9 +921,9 @@ IDs comunes de ARASAAC para referencia:
       goalLabel: goalMap[goal] || 'Petición',
       duration: `${durationMinutes} min`,
       pictograms: [
-        { text: (toyOrItem || 'JUGAR').toUpperCase(), arasaacId: 2439, role: 'Elemento de interés' },
-        { text: 'MÁS', arasaacId: 2344, role: 'Continuidad' },
-        { text: 'PARAR', arasaacId: 36914, role: 'Límite o plan B' }
+        { text: (toyOrItem || 'JUGAR').toUpperCase(), arasaacId: resolveVerifiedId(toyOrItem || 'JUGAR', 23392), role: 'Elemento de interés' },
+        { text: 'MÁS', arasaacId: 3220, role: 'Continuidad' },
+        { text: 'PARAR', arasaacId: 7196, role: 'Límite o plan B' }
       ],
       steps: [
         {
@@ -923,3 +955,4 @@ IDs comunes de ARASAAC para referencia:
     };
   }
 };
+

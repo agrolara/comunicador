@@ -763,5 +763,163 @@ IDs comunes de ARASAAC de referencia:
         { text: '¡Todo saldrá muy bien y volveremos a casa tranquilos!', arasaacId: 8020 }
       ]
     };
+  },
+
+  // 6. Generador de Actividades y Juegos de Modelado CAA
+  async generateActivity({
+    level = '1',
+    context = 'juegos',
+    goal = 'peticion',
+    toyOrItem = '',
+    durationMinutes = 5,
+    patientName = 'Dante'
+  }) {
+    const levelMap = {
+      '1': 'Nivel 1: Explorador (1 palabra, causa-efecto)',
+      '2': 'Nivel 2: Combinador (2 palabras, LME + 1)',
+      '3': 'Nivel 3: Comunicador Social y Emocional (Rechazo preventivo, turnos)'
+    };
+    const contextMap = {
+      'juegos': 'Juegos con juguetes (autos, bloques, etc.)',
+      'mesa': 'En la mesa / Comida (desayuno, colación)',
+      'sin_juguetes': 'Sin juguetes / Juegos corporales (cosquillas, canciones)',
+      'rutina': 'Rutina diaria / Aseo (lavarse manos, baño)',
+      'escuela': 'Escuela / Recreo / Aire libre'
+    };
+    const goalMap = {
+      'peticion': 'Petición espontánea de alta motivación',
+      'rechazo': 'Rechazo funcional ("NO" / "PARAR") antes de frustración',
+      'turnos': 'Esperar turnos y compartir ("MI TURNO" / "TU TURNO")',
+      'emocion': 'Expresión de emociones y sensaciones'
+    };
+
+    const systemPrompt = `Eres un Fonoaudiólogo Especialista Internacional en Estimulación de Lenguaje Asistido (ALS) y Estrategias Naturales de Modelado CAA para niños TEA / no verbales.
+Tu objetivo es diseñar una actividad o juego lúdico de ${durationMinutes} minutos para hacer en casa o en la escuela con el niño llamado ${patientName}.
+La actividad debe dar instrucciones claras al adulto sobre QUÉ HACER CON LAS MANOS, QUÉ DECIR y QUÉ PICTOGRAMA TOCAR.
+Nivel del niño: ${levelMap[level] || 'Nivel 1'}
+Contexto: ${contextMap[context] || 'Juego'}
+Objetivo principal: ${goalMap[goal] || 'Petición'}
+${toyOrItem ? `Elemento disponible: "${toyOrItem}"` : ''}
+
+IMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin bloques markdown como \`\`\`json y sin texto introductorio.
+
+Estructura requerida:
+{
+  "title": "Nombre lúdico y llamativo del juego (Ej: La Carrera Congelada)",
+  "summary": "Resumen en una línea de la dinámica del juego.",
+  "levelLabel": "${levelMap[level] || 'Nivel 1'}",
+  "contextLabel": "${contextMap[context] || 'Juegos'}",
+  "goalLabel": "${goalMap[goal] || 'Petición'}",
+  "duration": "${durationMinutes} min",
+  "pictograms": [
+    { "text": "PALABRA 1 (MAYÚSCULAS)", "arasaacId": 2419, "role": "Acción principal" },
+    { "text": "PALABRA 2 (MAYÚSCULAS)", "arasaacId": 36914, "role": "Límite o Plan B" },
+    { "text": "PALABRA 3 (MAYÚSCULAS)", "arasaacId": 2344, "role": "Continuidad" }
+  ],
+  "steps": [
+    {
+      "phase": "1. Enganche y Motivación",
+      "instruction": "Acción física concreta que debe realizar el adulto con el juguete.",
+      "adultScript": "Qué frase corta o sonido dice el adulto.",
+      "tip": "Tip clínico clave."
+    },
+    {
+      "phase": "2. La Pausa Mágica (Expectante)",
+      "instruction": "Cómo pausar el juego y esperar 10 segundos en silencio con sonrisa.",
+      "adultScript": "",
+      "tip": "No preguntes '¿qué quieres?'. Dale tiempo de procesar."
+    },
+    {
+      "phase": "3. Modelado en el Comunicador",
+      "instruction": "Toca tú el pictograma en la pantalla mientras dices la palabra.",
+      "adultScript": "¡VAMOS!",
+      "tip": "Mano bajo mano sólo si el niño lo acepta."
+    },
+    {
+      "phase": "4. Consecuencia Natural Inmediata",
+      "instruction": "Acción inmediata de recompensa cuando el niño intente comunicarse.",
+      "adultScript": "¡Eso es, vamos a jugar!",
+      "tip": "La rapidez del refuerzo consolida el aprendizaje."
+    }
+  ],
+  "planB": "Plan de autorregulación si el niño muestra frustración o rechazo (modelar NO/PARAR y guardar con calma)."
+}
+
+IDs comunes de ARASAAC para referencia:
+- Acciones: VAMOS (2419), PARAR (36914), ABRIR (2331), CERRAR (6038), ESPERAR (3288), JUGAR (2439), COMER (2573), TOMAR/BEBER (2270), DORMIR (6479)
+- Núcleo: QUIERO (6162), MÁS (2344), NO (36914), SÍ (2588), AYUDA (4550), MIRA/VER (2618), SE FUE (2432)
+- Objetos/Juguetes: AUTO (2339), BURBUJAS (2517), BLOQUES (2526), PELOTA (2502), PLASTILINA (5968), MÚSICA (2482), AGUA (2259), GALLETA (2409)
+- Turnos/Social: MI TURNO (3288), TU TURNO (3288), HOLA (6522), CHAO (6028), GRACIAS (2414)
+- Emociones: FELIZ (8020), CALMA (23392), ENOJADO (35539), CANSADO (2623), COSQUILLAS (2439)`;
+
+    const userPrompt = `Crea un juego de modelado CAA para ${patientName} utilizando: ${toyOrItem || contextMap[context] || 'juego cotidiano'}.`;
+
+    const rawResponse = await this.chatCompletion({
+      messages: [{ role: 'user', content: userPrompt }],
+      systemPrompt,
+      temperature: 0.6,
+      maxTokens: 2500
+    });
+
+    try {
+      const cleaned = rawResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed && parsed.title && Array.isArray(parsed.pictograms)) {
+          return {
+            id: `act-ai-${Date.now()}`,
+            isAiGenerated: true,
+            createdAt: new Date().toISOString(),
+            ...parsed
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Error parsing AI activity JSON, returning fallback', e);
+    }
+
+    return {
+      id: `act-ai-${Date.now()}`,
+      title: `Juego Guiado con ${toyOrItem || 'Objetos Cotidianos'}`,
+      isAiGenerated: true,
+      summary: 'Actividad interactiva de modelado asistido para generar peticiones y pausas expectantes.',
+      levelLabel: levelMap[level] || 'Nivel 1: Explorador',
+      contextLabel: contextMap[context] || 'Juegos',
+      goalLabel: goalMap[goal] || 'Petición',
+      duration: `${durationMinutes} min`,
+      pictograms: [
+        { text: (toyOrItem || 'JUGAR').toUpperCase(), arasaacId: 2439, role: 'Elemento de interés' },
+        { text: 'MÁS', arasaacId: 2344, role: 'Continuidad' },
+        { text: 'PARAR', arasaacId: 36914, role: 'Límite o plan B' }
+      ],
+      steps: [
+        {
+          phase: '1. Enganche y Motivación',
+          instruction: `Inicia el juego con ${toyOrItem || 'el objeto'} de manera atractiva y divertida.`,
+          adultScript: `¡Mira qué entretenido esto!`,
+          tip: 'Asegúrate de que el niño esté mirando y disfrutando el momento.'
+        },
+        {
+          phase: '2. Pausa Expectante',
+          instruction: 'Detén el juego y sostén el objeto. Espera 10 segundos con mirada cálida y sonrisa.',
+          adultScript: '',
+          tip: 'No te apresures a preguntar. La pausa le da tiempo de procesar su deseo de comunicarse.'
+        },
+        {
+          phase: '3. Modelado en el Comunicador',
+          instruction: 'Toca en la tablet el pictograma MÁS señalándolo con tu dedo.',
+          adultScript: '¡MÁS!',
+          tip: 'Modela sin exigir que repita inmediatamente.'
+        },
+        {
+          phase: '4. Recompensa Inmediata',
+          instruction: 'Apenas haya un intento comunicativo o toque la pantalla, reactiva el juego con entusiasmo.',
+          adultScript: '¡Sí, más juego para ti!',
+          tip: 'Celebra su iniciativa con una sonrisa genuina.'
+        }
+      ],
+      planB: 'Si el niño se aleja o muestra molestia, modela con calma el pictograma PARAR: "Entiendo, paramos por ahora" y guarda el juego.'
+    };
   }
 };

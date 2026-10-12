@@ -36,7 +36,8 @@ import {
   Compass,
   CheckCircle2,
   HelpCircle,
-  Volume2
+  Volume2,
+  X
 } from 'lucide-react';
 import { tts } from '../services/tts';
 import { analytics } from '../services/analytics';
@@ -68,6 +69,16 @@ export default function MainBoardView({
   });
 
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
+  // Active CAA Modeling Game Activity
+  const [activeGameActivity, setActiveGameActivity] = useState(() => {
+    try {
+      const saved = localStorage.getItem('danmax_active_game_activity');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
 
   // Custom User Pictograms tagged as Core
   const customCore = useMemo(() => 
@@ -381,6 +392,43 @@ export default function MainBoardView({
 
   return (
     <div className="p-3 md:p-6 max-w-7xl mx-auto space-y-5 pb-36 sm:pb-40 md:pb-48">
+      {/* 0.0 Active CAA Modeling Game Banner */}
+      {activeGameActivity && (
+        <section className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border-2 border-indigo-300 rounded-3xl p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#004ac6] text-white flex items-center justify-center shrink-0 shadow-sm animate-pulse">
+              <Gamepad2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-black uppercase bg-indigo-200 text-indigo-900 px-2 py-0.5 rounded-full">
+                  Juego Activo: {activeGameActivity.title}
+                </span>
+                <span className="text-[11px] font-bold text-indigo-800">
+                  Modela: {activeGameActivity.pictograms?.map(p => `[${p.text}]`).join(' ')}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 font-medium mt-0.5">
+                Pausa expectante de 10s • Modela tocando en la pantalla y refuerza inmediatamente
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setActiveGameActivity(null);
+              try {
+                localStorage.removeItem('danmax_active_game_activity');
+              } catch (e) {}
+              tts.playChime('pop');
+            }}
+            className="p-1.5 text-slate-400 hover:text-slate-700 font-bold cursor-pointer rounded-xl hover:bg-white/80 transition-all shrink-0"
+            title="Cerrar juego activo"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </section>
+      )}
+
       {/* 0. Guided Learning Mode Banner (Modelado Asistido / Scaffolding) */}
       <section className={`
         rounded-3xl border-2 p-3 sm:p-4 shadow-sm transition-all

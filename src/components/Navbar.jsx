@@ -21,7 +21,8 @@ import {
   Check,
   LogOut,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles
 } from 'lucide-react';
 import { tts } from '../services/tts';
 import QuickSearch from './QuickSearch';
@@ -61,6 +62,7 @@ export default function Navbar({
     { id: 'routines', label: 'Rutinas', icon: CalendarCheck2 },
     { id: 'turns', label: 'Turnos', icon: Users2 },
     { id: 'stories', label: 'Historias', icon: BookOpenText },
+    { id: 'activities', label: 'Actividades', icon: Sparkles },
     { id: 'editor', label: 'Editor', icon: PlusCircle },
     { id: 'settings', label: 'Ajustes', icon: Sliders }
   ];

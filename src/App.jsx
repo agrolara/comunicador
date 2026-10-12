@@ -9,6 +9,7 @@ import PainUrgencyView from './views/PainUrgencyView';
 import RoutinesView from './views/RoutinesView';
 import TurnTakingView from './views/TurnTakingView';
 import SocialStoriesView from './views/SocialStoriesView';
+import ActivitiesView from './views/ActivitiesView';
 import PictogramEditorView from './views/PictogramEditorView';
 import TherapistDashboardView from './views/TherapistDashboardView';
 import AccessibilitySettingsView from './views/AccessibilitySettingsView';
@@ -307,6 +308,10 @@ export default function App() {
 
         {activeTab === 'stories' && (
           <SocialStoriesView />
+        )}
+
+        {activeTab === 'activities' && (
+          <ActivitiesView onNavigateTab={setActiveTab} />
         )}
 
         {activeTab === 'editor' && (

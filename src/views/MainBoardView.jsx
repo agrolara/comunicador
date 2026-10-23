@@ -37,7 +37,9 @@ import {
   CheckCircle2,
   HelpCircle,
   Volume2,
-  X
+  X,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { tts } from '../services/tts';
 import { analytics } from '../services/analytics';
@@ -56,7 +58,9 @@ export default function MainBoardView({
   guidedMode = true,
   onToggleGuidedMode,
   onNavigateTab,
-  onNavigateCategory
+  onNavigateCategory,
+  isFullScreen = false,
+  onToggleFullScreen = () => {}
 }) {
   // 1. Configured Core Vocabulary by Parent/Therapist (persisted in localStorage)
   const [configuredCore, setConfiguredCore] = useState(() => {
@@ -429,93 +433,81 @@ export default function MainBoardView({
         </section>
       )}
 
-      {/* 0. Guided Learning Mode Banner (Modelado Asistido / Scaffolding) */}
-      <section className={`
-        rounded-3xl border-2 p-3 sm:p-4 shadow-sm transition-all
-        ${guidedMode 
-          ? 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-300' 
-          : 'bg-slate-50 border-slate-200'}
-      `}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className={`
-              w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm
-              ${guidedMode ? 'bg-amber-500 text-white animate-pulse' : 'bg-slate-300 text-slate-600'}
-            `}>
-              <Compass className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                  <span>Modo Guía de Aprendizaje</span>
-                  {guidedMode && (
+      {/* 0. Guided Learning Mode (Modelado Asistido / Scaffolding) */}
+      {guidedMode ? (
+        <section className="rounded-3xl border-2 p-3 sm:p-4 shadow-sm transition-all bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm bg-amber-500 text-white animate-pulse">
+                <Compass className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5">
+                    <span>Modo Guía de Aprendizaje</span>
                     <span className="bg-amber-200 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                       Activo
                     </span>
-                  )}
-                </h2>
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">
+                  Resalta de forma predictiva los pictogramas para estructurar frases con sentido (Yo ➔ Quiero ➔ Chocolate ➔ Hablar).
+                </p>
               </div>
-              <p className="text-xs text-slate-600 font-medium mt-0.5">
-                {guidedMode 
-                  ? 'Resalta de forma predictiva los pictogramas para estructurar frases con sentido (Yo ➔ Quiero ➔ Chocolate ➔ Hablar).'
-                  : 'Modo exploración libre activo. Activa la guía para acompañar paso a paso al niño.'}
-              </p>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <button
+                onClick={() => onToggleGuidedMode ? onToggleGuidedMode(false) : null}
+                type="button"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl font-black text-xs cursor-pointer transition-all shadow-xs bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Desactivar Guía</span>
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-            {/* Toggle Guided Mode Button */}
-            <button
-              onClick={() => onToggleGuidedMode ? onToggleGuidedMode(!guidedMode) : null}
-              type="button"
-              className={`
-                flex items-center gap-1.5 px-3.5 py-2 rounded-2xl font-black text-xs cursor-pointer transition-all shadow-xs
-                ${guidedMode 
-                  ? 'bg-amber-500 hover:bg-amber-600 text-white' 
-                  : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'}
-              `}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{guidedMode ? 'Guía Activada' : 'Activar Guía'}</span>
-            </button>
-
-            {/* Configure Core Vocabulary Modal Trigger */}
-            <button
-              onClick={() => setIsConfigModalOpen(true)}
-              type="button"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl font-black text-xs bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 cursor-pointer transition-all shadow-xs"
-              title="Personalizar pictogramas del Vocabulario Núcleo"
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Configurar Núcleo</span>
-              <span className="sm:hidden">Núcleo</span>
-            </button>
+          {/* Active Step Indicator Pill when Guided Mode is ON */}
+          {guidedStepInfo && (
+            <div className="mt-3 pt-3 border-t border-amber-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white/70 rounded-2xl p-2.5 px-3.5 border border-amber-200 shadow-2xs">
+              <div className="flex items-center gap-2.5">
+                <span className="bg-amber-500 text-white font-black text-[11px] px-2.5 py-1 rounded-xl shadow-2xs shrink-0 tracking-wide">
+                  {guidedStepInfo.badge}
+                </span>
+                <span className="font-extrabold text-xs sm:text-sm text-amber-950">
+                  {guidedStepInfo.instruction}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] font-black text-amber-800 shrink-0">
+                <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 1 ? 'bg-amber-300 font-black' : 'bg-amber-100'}`}>1. Yo</span>
+                <span>➔</span>
+                <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 2 ? 'bg-amber-300 font-black' : 'bg-amber-100'}`}>2. Quiero</span>
+                <span>➔</span>
+                <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 3 ? 'bg-amber-300 font-black' : 'bg-amber-100'}`}>3. Objeto</span>
+                <span>➔</span>
+                <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 4 ? 'bg-emerald-300 font-black text-emerald-950' : 'bg-amber-100'}`}>4. Hablar</span>
+              </div>
+            </div>
+          )}
+        </section>
+      ) : (
+        /* Modo Guía Minimizado a algo pequeño cuando no está activado */
+        <div className="flex items-center justify-between bg-white/80 hover:bg-white border border-slate-200 rounded-2xl px-3 py-1.5 shadow-2xs transition-all">
+          <div className="flex items-center gap-2 text-slate-500">
+            <Compass className="w-4 h-4 text-slate-400" />
+            <span className="text-[11px] sm:text-xs font-bold">Modo Guía desactivado (Exploración libre)</span>
           </div>
+          <button
+            onClick={() => onToggleGuidedMode ? onToggleGuidedMode(true) : null}
+            type="button"
+            className="flex items-center gap-1 text-[11px] font-black text-amber-800 bg-amber-100 hover:bg-amber-200 border border-amber-300/80 px-2.5 py-1 rounded-xl transition-all cursor-pointer shadow-2xs"
+          >
+            <Sparkles className="w-3 h-3 text-amber-600" />
+            <span>Activar Guía</span>
+          </button>
         </div>
-
-        {/* Active Step Indicator Pill when Guided Mode is ON */}
-        {guidedMode && guidedStepInfo && (
-          <div className="mt-3 pt-3 border-t border-amber-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white/70 rounded-2xl p-2.5 px-3.5 border border-amber-200 shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <span className="bg-amber-500 text-white font-black text-[11px] px-2.5 py-1 rounded-xl shadow-2xs shrink-0 tracking-wide">
-                {guidedStepInfo.badge}
-              </span>
-              <span className="font-extrabold text-xs sm:text-sm text-amber-950">
-                {guidedStepInfo.instruction}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-black text-amber-800 shrink-0">
-              <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 1 ? 'bg-amber-300 font-black' : 'bg-amber-100'}`}>1. Yo</span>
-              <span>➔</span>
-              <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 2 ? 'bg-amber-300 font-black' : 'bg-amber-100'}`}>2. Quiero</span>
-              <span>➔</span>
-              <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 3 ? 'bg-amber-300 font-black' : 'bg-amber-100'}`}>3. Objeto</span>
-              <span>➔</span>
-              <span className={`px-2 py-0.5 rounded-lg ${guidedStepInfo.step === 4 ? 'bg-emerald-300 font-black text-emerald-950' : 'bg-amber-100'}`}>4. Hablar</span>
-            </div>
-          </div>
-        )}
-      </section>
+      )}
 
       {/* 1. Vocabulario Núcleo (Core Vocabulary Stitch) */}
       <section className="bg-white/90 border-2 border-[#d8e3fb] rounded-3xl p-4 sm:p-5 shadow-xs">
@@ -531,13 +523,38 @@ export default function MainBoardView({
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Botón Pantalla Completa en Tablero */}
+            <button
+              onClick={onToggleFullScreen}
+              type="button"
+              className={`text-xs font-black px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border shadow-2xs ${
+                isFullScreen 
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600' 
+                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+              }`}
+              title={isFullScreen ? 'Salir del Modo Pantalla Completa' : 'Ver Tablero en Pantalla Completa (Sin Distractores)'}
+            >
+              {isFullScreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5 text-white" />
+                  <span>Salir Pantalla Completa</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Pantalla Completa</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={() => setIsConfigModalOpen(true)}
               type="button"
               className="text-xs font-black text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 border border-indigo-200"
             >
               <Settings2 className="w-3.5 h-3.5" />
-              <span>Personalizar Vocabulario Núcleo</span>
+              <span className="hidden sm:inline">Personalizar Vocabulario Núcleo</span>
+              <span className="sm:hidden">Personalizar</span>
             </button>
             <span className="text-[11px] font-black text-[#004ac6] bg-[#dbe1ff] px-3 py-1 rounded-full hidden sm:inline">
               CLAVE FITZGERALD
@@ -563,80 +580,85 @@ export default function MainBoardView({
         </div>
       </section>
 
-      {/* 2. Encabezado de Categorías de Pictogramas */}
-      <div className="flex items-center justify-between px-2 pt-2">
-        <div>
-          <h3 className="text-base sm:text-lg font-black text-[#111c2d] tracking-tight flex items-center gap-2">
-            <span>CATEGORÍAS DE PICTOGRAMAS</span>
-            <span className="text-xs font-bold text-[#004ac6] bg-[#dbe1ff] px-2.5 py-0.5 rounded-full">
-              Top 4 más usados por usuario
-            </span>
-          </h3>
-          <p className="text-xs text-[#737686] font-medium">
-            Se adaptan automáticamente a las preferencias de comunicación individuales.
-          </p>
-        </div>
-        <button
-          onClick={() => handleOpenCategory('all')}
-          type="button"
-          className="text-xs font-black text-[#004ac6] bg-[#e7eeff] hover:bg-[#d8e3fb] px-3 py-1.5 rounded-xl transition-all cursor-pointer hidden sm:flex items-center gap-1"
-        >
-          <span>Ver catálogo completo</span>
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* 3. Todas las categorías existentes con sus 4 pictogramas más usados */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-        {categoriesWithTop4.map((category) => {
-          const Icon = category.icon;
-          const { border, bg, text, btnBg } = category.color;
-
-          return (
-            <div
-              key={category.id}
-              style={{ backgroundColor: bg, borderColor: border }}
-              className="border-2 rounded-3xl p-4 shadow-xs flex flex-col justify-between transition-all hover:shadow-sm"
-            >
-              {/* Category Header */}
-              <div className="flex items-center justify-between mb-3">
-                <div style={{ color: text }} className="flex items-center gap-2 font-black text-sm md:text-base">
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  <span className="uppercase tracking-tight">{category.label}</span>
-                </div>
-                <button
-                  onClick={() => handleOpenCategory(category.id)}
-                  type="button"
-                  style={{ backgroundColor: btnBg, color: text }}
-                  className="flex items-center gap-1 text-xs font-black px-3 py-1.5 rounded-xl cursor-pointer transition-all active:scale-95 shadow-2xs hover:brightness-95"
-                  title={`Ver todos los ${category.totalCount} pictogramas en ${category.label}`}
-                >
-                  <span>Ver todos ({category.totalCount})</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Top 4 Pictograms Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {category.top4.map((item) => (
-                  <PictoCard
-                    key={`${category.id}-${item.id}-${item.text}`}
-                    item={item}
-                    onSelect={onAddToSentence}
-                    size={cardSize}
-                    highContrast={highContrast}
-                    dwellTime={dwellTime}
-                    textTransform={textCase}
-                    imageOverrides={imageOverrides}
-                    textOverrides={textOverrides}
-                    isHighlighted={guidedMode && isCardGuidedTarget(item)}
-                  />
-                ))}
-              </div>
+      {/* 2 & 3. Categorías al fondo del tablero (Ocultas en Modo Pantalla Completa para máxima inmersión sin distractores) */}
+      {!isFullScreen && (
+        <>
+          {/* 2. Encabezado de Categorías de Pictogramas */}
+          <div className="flex items-center justify-between px-2 pt-2">
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-[#111c2d] tracking-tight flex items-center gap-2">
+                <span>CATEGORÍAS DE PICTOGRAMAS</span>
+                <span className="text-xs font-bold text-[#004ac6] bg-[#dbe1ff] px-2.5 py-0.5 rounded-full">
+                  Top 4 más usados por usuario
+                </span>
+              </h3>
+              <p className="text-xs text-[#737686] font-medium">
+                Se adaptan automáticamente a las preferencias de comunicación individuales.
+              </p>
             </div>
-          );
-        })}
-      </section>
+            <button
+              onClick={() => handleOpenCategory('all')}
+              type="button"
+              className="text-xs font-black text-[#004ac6] bg-[#e7eeff] hover:bg-[#d8e3fb] px-3 py-1.5 rounded-xl transition-all cursor-pointer hidden sm:flex items-center gap-1"
+            >
+              <span>Ver catálogo completo</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* 3. Todas las categorías existentes con sus 4 pictogramas más usados */}
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+            {categoriesWithTop4.map((category) => {
+              const Icon = category.icon;
+              const { border, bg, text, btnBg } = category.color;
+
+              return (
+                <div
+                  key={category.id}
+                  style={{ backgroundColor: bg, borderColor: border }}
+                  className="border-2 rounded-3xl p-4 shadow-xs flex flex-col justify-between transition-all hover:shadow-sm"
+                >
+                  {/* Category Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div style={{ color: text }} className="flex items-center gap-2 font-black text-sm md:text-base">
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="uppercase tracking-tight">{category.label}</span>
+                    </div>
+                    <button
+                      onClick={() => handleOpenCategory(category.id)}
+                      type="button"
+                      style={{ backgroundColor: btnBg, color: text }}
+                      className="flex items-center gap-1 text-xs font-black px-3 py-1.5 rounded-xl cursor-pointer transition-all active:scale-95 shadow-2xs hover:brightness-95"
+                      title={`Ver todos los ${category.totalCount} pictogramas en ${category.label}`}
+                    >
+                      <span>Ver todos ({category.totalCount})</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Top 4 Pictograms Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {category.top4.map((item) => (
+                      <PictoCard
+                        key={`${category.id}-${item.id}-${item.text}`}
+                        item={item}
+                        onSelect={onAddToSentence}
+                        size={cardSize}
+                        highContrast={highContrast}
+                        dwellTime={dwellTime}
+                        textTransform={textCase}
+                        imageOverrides={imageOverrides}
+                        textOverrides={textOverrides}
+                        isHighlighted={guidedMode && isCardGuidedTarget(item)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        </>
+      )}
 
       {/* Core Vocabulary Configurator Modal */}
       <CoreVocabularyConfigModal

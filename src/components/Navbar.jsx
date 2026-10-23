@@ -22,7 +22,9 @@ import {
   LogOut,
   X,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { tts } from '../services/tts';
 import QuickSearch from './QuickSearch';
@@ -53,7 +55,9 @@ export default function Navbar({
   customPictograms = [],
   sentenceItems = [],
   orientationMode = 'auto',
-  onOrientationModeChange = () => {}
+  onOrientationModeChange = () => {},
+  isFullScreen = false,
+  onToggleFullScreen = () => {}
 }) {
   const primaryTabs = [
     { id: 'main', label: 'Tablero', icon: LayoutGrid },
@@ -167,7 +171,7 @@ export default function Navbar({
   return (
     <>
       {/* Top Android App Bar con Buscador Rápido de Pictogramas Integrado */}
-      <header className="bg-[#ffffff] border-b border-[#c3c6d7] px-2 sm:px-4 py-2 flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs z-30 sticky top-0">
+      <header className="bg-[#ffffff] border-b border-[#c3c6d7] px-2 sm:px-4 py-2 flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xs relative w-full">
         {/* Left: Brand Identity (Click to return to main board) */}
         <button
           type="button"
@@ -208,100 +212,130 @@ export default function Navbar({
 
         {/* Top Right Quick Actions */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Orientation Mode Switcher (PWA / App) */}
+          {/* Full Screen Toggle Button (Modo Enfoque sin distractores) */}
           <button
             type="button"
-            onClick={cycleOrientation}
+            onClick={onToggleFullScreen}
             className={`
-              flex items-center gap-1 px-2 py-1.5 rounded-xl font-black text-xs cursor-pointer transition-all border
-              ${orientationMode === 'portrait'
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs'
-                : orientationMode === 'landscape'
-                ? 'bg-violet-50 text-violet-800 border-violet-300 shadow-2xs'
-                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'}
+              flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl font-black text-xs cursor-pointer transition-all border shadow-2xs
+              ${isFullScreen 
+                ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 animate-pulse' 
+                : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'}
             `}
-            title={`Orientación de la App: ${orientationMode === 'portrait' ? 'Vertical (Retrato)' : orientationMode === 'landscape' ? 'Horizontal (Paisaje)' : 'Automático'}. Toca para cambiar.`}
+            title={isFullScreen ? "Salir de Pantalla Completa (Modo Normal)" : "Ver Tablero en Pantalla Completa (Sin Distractores)"}
           >
-            {orientationMode === 'portrait' ? (
-              <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
-            ) : orientationMode === 'landscape' ? (
-              <Monitor className="w-3.5 h-3.5 text-violet-600" />
+            {isFullScreen ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5 text-white" />
+                <span className="text-[11px]">Salir Pantalla Completa</span>
+              </>
             ) : (
-              <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
+              <>
+                <Maximize2 className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="hidden sm:inline text-[11px]">Pantalla Completa</span>
+              </>
             )}
-            <span className="hidden xl:inline text-[10px]">
-              {orientationMode === 'portrait' ? 'Vertical' : orientationMode === 'landscape' ? 'Horizontal' : 'Auto'}
-            </span>
           </button>
 
-          {/* Client Account / Iniciar Sesión o Registrarse con clave asignada */}
-          <button
-            type="button"
-            onClick={() => {
-              setShowClientModal(true);
-              tts.playChime('pop');
-            }}
-            className={`
-              flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all border
-              ${activeClientSession
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'}
-            `}
-            title={activeClientSession ? `Licencia Activa: ${activeClientSession.name}` : "Registro y Acceso de Clientes"}
-          >
-            <UserCheck className={`w-3.5 h-3.5 ${activeClientSession ? 'text-emerald-600' : 'text-slate-600'}`} />
-            <span className="hidden sm:inline text-[11px]">
-              {activeClientSession ? activeClientSession.name.split(' ')[0] : 'Mi Cuenta'}
-            </span>
-          </button>
+          {/* Iconos normales (Se ocultan automáticamente en Pantalla Completa para eliminar distractores) */}
+          {!isFullScreen && (
+            <>
+              {/* Orientation Mode Switcher (PWA / App) */}
+              <button
+                type="button"
+                onClick={cycleOrientation}
+                className={`
+                  flex items-center gap-1 px-2 py-1.5 rounded-xl font-black text-xs cursor-pointer transition-all border
+                  ${orientationMode === 'portrait'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs'
+                    : orientationMode === 'landscape'
+                    ? 'bg-violet-50 text-violet-800 border-violet-300 shadow-2xs'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'}
+                `}
+                title={`Orientación de la App: ${orientationMode === 'portrait' ? 'Vertical (Retrato)' : orientationMode === 'landscape' ? 'Horizontal (Paisaje)' : 'Automático'}. Toca para cambiar.`}
+              >
+                {orientationMode === 'portrait' ? (
+                  <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                ) : orientationMode === 'landscape' ? (
+                  <Monitor className="w-3.5 h-3.5 text-violet-600" />
+                ) : (
+                  <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
+                )}
+                <span className="hidden xl:inline text-[10px]">
+                  {orientationMode === 'portrait' ? 'Vertical' : orientationMode === 'landscape' ? 'Horizontal' : 'Auto'}
+                </span>
+              </button>
 
-          {/* Therapist Tab */}
-          <button
-            onClick={() => handleSelectTab('therapist')}
-            type="button"
-            className={`
-              flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all
-              ${activeTab === 'therapist' 
-                ? 'bg-[#004ac6] text-white shadow-xs' 
-                : 'bg-[#e7eeff] text-[#004ac6] hover:bg-[#d8e3fb]'}
-            `}
-            title="Panel de Fonoaudiología y Progreso"
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span className="hidden md:inline text-[11px]">Terapeuta</span>
-          </button>
+              {/* Client Account / Iniciar Sesión o Registrarse con clave asignada */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowClientModal(true);
+                  tts.playChime('pop');
+                }}
+                className={`
+                  flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all border
+                  ${activeClientSession
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'}
+                `}
+                title={activeClientSession ? `Licencia Activa: ${activeClientSession.name}` : "Registro y Acceso de Clientes"}
+              >
+                <UserCheck className={`w-3.5 h-3.5 ${activeClientSession ? 'text-emerald-600' : 'text-slate-600'}`} />
+                <span className="hidden sm:inline text-[11px]">
+                  {activeClientSession ? activeClientSession.name.split(' ')[0] : 'Mi Cuenta'}
+                </span>
+              </button>
 
-          {/* Guide Tab */}
-          <button
-            onClick={() => handleSelectTab('guide')}
-            type="button"
-            className={`
-              flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all
-              ${activeTab === 'guide' 
-                ? 'bg-[#ba1a1a] text-white shadow-xs' 
-                : 'bg-[#ffdad6] text-[#93000a] hover:bg-[#ffc5bf]'}
-            `}
-            title="Guía de Modelado CAA"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span className="hidden md:inline text-[11px]">Guía CAA</span>
-          </button>
+              {/* Therapist Tab */}
+              <button
+                onClick={() => handleSelectTab('therapist')}
+                type="button"
+                className={`
+                  flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all
+                  ${activeTab === 'therapist' 
+                    ? 'bg-[#004ac6] text-white shadow-xs' 
+                    : 'bg-[#e7eeff] text-[#004ac6] hover:bg-[#d8e3fb]'}
+                `}
+                title="Panel de Fonoaudiología y Progreso"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span className="hidden md:inline text-[11px]">Terapeuta</span>
+              </button>
 
-          {/* Admin Dashboard */}
-          <button
-            onClick={() => handleSelectTab('admin')}
-            type="button"
-            className={`
-              flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all
-              ${activeTab === 'admin' 
-                ? 'bg-[#312e81] text-white shadow-xs' 
-                : 'bg-[#e0e7ff] text-[#3730a3] hover:bg-[#c7d2fe]'}
-            `}
-            title="Panel Administrador y Gestión de Clientes"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline text-[11px]">Admin</span>
-          </button>
+              {/* Guide Tab */}
+              <button
+                onClick={() => handleSelectTab('guide')}
+                type="button"
+                className={`
+                  flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all
+                  ${activeTab === 'guide' 
+                    ? 'bg-[#ba1a1a] text-white shadow-xs' 
+                    : 'bg-[#ffdad6] text-[#93000a] hover:bg-[#ffc5bf]'}
+                `}
+                title="Guía de Modelado CAA"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span className="hidden md:inline text-[11px]">Guía CAA</span>
+              </button>
+
+              {/* Admin Dashboard */}
+              <button
+                onClick={() => handleSelectTab('admin')}
+                type="button"
+                className={`
+                  flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all
+                  ${activeTab === 'admin' 
+                    ? 'bg-[#312e81] text-white shadow-xs' 
+                    : 'bg-[#e0e7ff] text-[#3730a3] hover:bg-[#c7d2fe]'}
+                `}
+                title="Panel Administrador y Gestión de Clientes"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-[11px]">Admin</span>
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -452,44 +486,46 @@ export default function Navbar({
         </div>
       )}
 
-      {/* Bottom Android Material 3 Navigation Bar */}
-      <nav className={`
-        fixed bottom-0 z-40 bg-[#ffffff] border-t-2 border-[#c3c6d7]
-        px-1 sm:px-3 py-1 shadow-lg flex items-center overflow-x-auto no-scrollbar
-        justify-start sm:justify-around gap-1 sm:gap-2
-        ${orientationMode === 'portrait' ? 'left-1/2 -translate-x-1/2 w-full max-w-[680px]' : 'left-0 right-0'}
-        ${highContrast ? 'border-t-4 border-black bg-slate-50' : ''}
-      `}>
-        {primaryTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+      {/* Bottom Android Material 3 Navigation Bar (Oculto en Modo Pantalla Completa para máxima inmersión) */}
+      {!isFullScreen && (
+        <nav className={`
+          fixed bottom-0 z-40 bg-[#ffffff] border-t-2 border-[#c3c6d7]
+          px-1 sm:px-3 py-1 shadow-lg flex items-center overflow-x-auto no-scrollbar
+          justify-start sm:justify-around gap-1 sm:gap-2
+          ${orientationMode === 'portrait' ? 'left-1/2 -translate-x-1/2 w-full max-w-[680px]' : 'left-0 right-0'}
+          ${highContrast ? 'border-t-4 border-black bg-slate-50' : ''}
+        `}>
+          {primaryTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
 
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleSelectTab(tab.id)}
-              type="button"
-              className="flex flex-col items-center justify-center shrink-0 min-w-[62px] sm:min-w-0 sm:flex-1 py-1 cursor-pointer select-none group"
-            >
-              {/* Material 3 Active Indicator Pill */}
-              <div className={`
-                flex items-center justify-center px-2.5 sm:px-4 py-1 rounded-full transition-all duration-150
-                ${isActive 
-                  ? 'bg-[#dbe1ff] text-[#004ac6] scale-105 shadow-2xs' 
-                  : 'text-[#434655] group-hover:bg-slate-100'}
-              `}>
-                <Icon className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-              </div>
-              <span className={`
-                text-[9px] sm:text-[11px] mt-0.5 tracking-tight line-clamp-1 max-w-[74px] sm:max-w-none text-center leading-tight
-                ${isActive ? 'font-black text-[#004ac6]' : 'font-bold text-[#737686]'}
-              `}>
-                {tab.label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleSelectTab(tab.id)}
+                type="button"
+                className="flex flex-col items-center justify-center shrink-0 min-w-[62px] sm:min-w-0 sm:flex-1 py-1 cursor-pointer select-none group"
+              >
+                {/* Material 3 Active Indicator Pill */}
+                <div className={`
+                  flex items-center justify-center px-2.5 sm:px-4 py-1 rounded-full transition-all duration-150
+                  ${isActive 
+                    ? 'bg-[#dbe1ff] text-[#004ac6] scale-105 shadow-2xs' 
+                    : 'text-[#434655] group-hover:bg-slate-100'}
+                `}>
+                  <Icon className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                </div>
+                <span className={`
+                  text-[9px] sm:text-[11px] mt-0.5 tracking-tight line-clamp-1 max-w-[74px] sm:max-w-none text-center leading-tight
+                  ${isActive ? 'font-black text-[#004ac6]' : 'font-bold text-[#737686]'}
+                `}>
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </>
   );
 }

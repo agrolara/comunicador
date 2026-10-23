@@ -44,6 +44,39 @@ export default function App() {
   const [speakOnTap, setSpeakOnTap] = useState(() => localStorage.getItem('danmax_speak_on_tap') !== 'false');
   const [orientationMode, setOrientationMode] = useState(() => localStorage.getItem('danmax_orientation_mode') || 'auto');
   const [guidedMode, setGuidedMode] = useState(() => localStorage.getItem('danmax_guided_mode') !== 'false');
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  const toggleFullScreen = () => {
+    tts.playChime('pop');
+    const next = !isFullScreen;
+    setIsFullScreen(next);
+
+    try {
+      if (next) {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } else {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isFullScreen) {
+        setIsFullScreen(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, [isFullScreen]);
 
   useEffect(() => {
     try {
@@ -217,35 +250,40 @@ export default function App() {
 
   return (
     <div className={`min-h-screen flex flex-col bg-[#f9f9ff] text-[#111c2d] ${getFontFamilyClass()} ${highContrast ? 'high-contrast' : ''} ${orientationMode === 'portrait' ? 'orientation-portrait' : orientationMode === 'landscape' ? 'orientation-landscape' : ''}`}>
-      {/* Top App Bar con Buscador Rápido y Bottom Navigation Material 3 */}
-      <Navbar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        highContrast={highContrast}
-        onAddToSentence={handleAddToSentence}
-        imageOverrides={imageOverrides}
-        textOverrides={textOverrides}
-        customPictograms={customPictograms}
-        sentenceItems={sentenceItems}
-        orientationMode={orientationMode}
-        onOrientationModeChange={setOrientationMode}
-      />
-
-      {/* Persistent Sentence Bar (accesible siempre que haya frase o en pestañas de comunicación) */}
-      {(sentenceItems.length > 0 || ['main', 'categories', 'pain', 'turns'].includes(activeTab)) && (
-        <SentenceBar
-          items={sentenceItems}
-          onRemoveItem={handleRemoveSentenceItem}
-          onClear={handleClearSentence}
+      {/* Sticky Top Suite: Navbar + SentenceBar juntos para que jamás se superpongan ni se oculten al hacer scroll */}
+      <div className="sticky top-0 z-30 bg-[#ffffff] shadow-xs">
+        <Navbar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
           highContrast={highContrast}
+          onAddToSentence={handleAddToSentence}
           imageOverrides={imageOverrides}
           textOverrides={textOverrides}
-          highlightSpeak={isSentenceReadyToSpeak}
+          customPictograms={customPictograms}
+          sentenceItems={sentenceItems}
+          orientationMode={orientationMode}
+          onOrientationModeChange={setOrientationMode}
+          isFullScreen={isFullScreen}
+          onToggleFullScreen={toggleFullScreen}
         />
-      )}
 
-      {/* Main Content Area con espacio inferior generoso para que nada quede oculto tras la barra de navegación */}
-      <main className="flex-1 pb-36 sm:pb-40 md:pb-48">
+        {/* Persistent Sentence Bar (accesible siempre que haya frase o en pestañas de comunicación) */}
+        {(sentenceItems.length > 0 || ['main', 'categories', 'pain', 'turns'].includes(activeTab)) && (
+          <SentenceBar
+            items={sentenceItems}
+            onRemoveItem={handleRemoveSentenceItem}
+            onClear={handleClearSentence}
+            highContrast={highContrast}
+            imageOverrides={imageOverrides}
+            textOverrides={textOverrides}
+            highlightSpeak={isSentenceReadyToSpeak}
+            isFullScreen={isFullScreen}
+          />
+        )}
+      </div>
+
+      {/* Main Content Area con espacio inferior adaptable (reducido en Pantalla Completa al ocultar la barra inferior) */}
+      <main className={`flex-1 ${isFullScreen ? 'pb-8 sm:pb-12' : 'pb-36 sm:pb-40 md:pb-48'}`}>
         <ErrorBoundary key={activeTab} onNavigateHome={() => setActiveTab('main')}>
           {activeTab === 'main' && (
           <MainBoardView
@@ -263,6 +301,8 @@ export default function App() {
             onToggleGuidedMode={setGuidedMode}
             onNavigateTab={setActiveTab}
             onNavigateCategory={handleNavigateToCategory}
+            isFullScreen={isFullScreen}
+            onToggleFullScreen={toggleFullScreen}
           />
         )}
 

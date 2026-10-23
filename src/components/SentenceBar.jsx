@@ -12,7 +12,8 @@ export default function SentenceBar({
   highContrast = false,
   imageOverrides = {},
   textOverrides = {},
-  highlightSpeak = false
+  highlightSpeak = false,
+  isFullScreen = false
 }) {
   const [highlightedIndex, setHighlightedIndex] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -71,9 +72,10 @@ export default function SentenceBar({
 
   return (
     <div className={`
-      bg-[#ffffff] border-b-2 border-slate-300 px-3 py-2.5 shadow-sm
-      flex flex-col md:flex-row items-center gap-2.5 z-20 sticky top-0
+      bg-[#ffffff] border-b-2 border-slate-300 px-3 py-2 sm:py-2.5 shadow-sm
+      flex flex-col md:flex-row items-center gap-2 sm:gap-2.5 z-20 relative w-full
       ${highContrast ? 'border-b-4 border-black bg-slate-50' : ''}
+      ${isFullScreen ? 'bg-white/98 backdrop-blur-md shadow-md border-b-2 border-indigo-200' : ''}
     `}>
       {/* Cards Strip (Accumulator Canvas) */}
       <div className="flex-1 w-full min-h-[82px] bg-[#f0f3ff] rounded-2xl border-2 border-[#c3c6d7] p-2 flex items-center gap-2.5 overflow-x-auto shadow-inner">

@@ -40,6 +40,7 @@ const MIME_TYPES = {
 
 // EdgeTTS Clients Cache per Voice
 const ttsClients = new Map();
+const inFlightSyntheses = new Map();
 
 async function getTTSClient(voice) {
   if (!ttsClients.has(voice)) {
@@ -48,6 +49,92 @@ async function getTTSClient(voice) {
     ttsClients.set(voice, client);
   }
   return ttsClients.get(voice);
+}
+
+// Helper: Safely Stream Audio File with Full HTTP Range (RFC 7233) & Safari/iOS Media Compatibility
+function sendAudioFile(req, res, filePath) {
+  try {
+    const stat = fs.statSync(filePath);
+    const totalSize = stat.size;
+    const range = req.headers.range;
+
+    const commonHeaders = {
+      'Content-Type': 'audio/mpeg',
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Range, Content-Type, Accept',
+      'Access-Control-Expose-Headers': 'Content-Range, Content-Length, Accept-Ranges'
+    };
+
+    if (range && range.startsWith('bytes=')) {
+      const parts = range.replace('bytes=', '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : totalSize - 1;
+
+      if (isNaN(start) || start >= totalSize || end >= totalSize || start > end) {
+        res.writeHead(416, {
+          'Content-Range': `bytes */${totalSize}`,
+          'Access-Control-Allow-Origin': '*'
+        });
+        res.end();
+        return;
+      }
+
+      const chunkSize = (end - start) + 1;
+      res.writeHead(206, {
+        ...commonHeaders,
+        'Content-Range': `bytes ${start}-${end}/${totalSize}`,
+        'Content-Length': chunkSize
+      });
+
+      fs.createReadStream(filePath, { start, end }).pipe(res);
+    } else {
+      res.writeHead(200, {
+        ...commonHeaders,
+        'Content-Length': totalSize
+      });
+      fs.createReadStream(filePath).pipe(res);
+    }
+  } catch (err) {
+    console.error('[sendAudioFile error]:', err);
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ error: 'Failed to stream audio file' }));
+    }
+  }
+}
+
+// Generate TTS Audio Atomically to avoid 0-byte or corrupt file races
+async function synthesizeToFile(cleanText, voice, rate, pitch, targetPath) {
+  const tempPath = `${targetPath}.tmp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  try {
+    const client = await getTTSClient(voice);
+    const { audioStream } = await client.toStream(cleanText, { rate, pitch });
+    const ws = fs.createWriteStream(tempPath);
+
+    await new Promise((resolve, reject) => {
+      audioStream.pipe(ws);
+      ws.on('finish', resolve);
+      audioStream.on('error', (err) => {
+        ws.destroy();
+        reject(err);
+      });
+      ws.on('error', reject);
+    });
+
+    const stat = fs.statSync(tempPath);
+    if (stat.size > 0) {
+      fs.renameSync(tempPath, targetPath);
+    } else {
+      try { fs.unlinkSync(tempPath); } catch (e) {}
+      throw new Error('Synthesized file is 0 bytes');
+    }
+  } catch (err) {
+    try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (e) {}
+    ttsClients.delete(voice); // Re-establish client on next request
+    throw err;
+  }
 }
 
 // Pre-warm Core Words
@@ -59,15 +146,11 @@ const CORE_WORDS = [
 
 async function prewarmVoice(voice) {
   try {
-    const client = await getTTSClient(voice);
     for (const word of CORE_WORDS) {
       const hash = crypto.createHash('md5').update(`${word}_${voice}_+0%_+0Hz`).digest('hex');
       const audioPath = path.join(CACHE_DIR, `${hash}.mp3`);
-      if (!fs.existsSync(audioPath)) {
-        const { audioStream } = await client.toStream(word);
-        const ws = fs.createWriteStream(audioPath);
-        audioStream.pipe(ws);
-        await new Promise((resolve) => ws.on('finish', resolve));
+      if (!fs.existsSync(audioPath) || fs.statSync(audioPath).size === 0) {
+        await synthesizeToFile(word, voice, '+0%', '+0Hz', audioPath);
       }
     }
     console.log(`[TTS] Pre-warmed core vocabulary for ${voice}`);
@@ -88,13 +171,25 @@ const server = http.createServer(async (req, res) => {
 
     // 1. API: Text-to-Speech Endpoint
     if (pathname === '/api/tts') {
+      // CORS Preflight
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Range, Content-Type, Accept',
+          'Access-Control-Max-Age': '86400'
+        });
+        res.end();
+        return;
+      }
+
       const text = parsedUrl.searchParams.get('text');
       const voice = parsedUrl.searchParams.get('voice') || 'es-CL-CatalinaNeural';
       const rate = parsedUrl.searchParams.get('rate') || '+0%';
       const pitch = parsedUrl.searchParams.get('pitch') || '+0Hz';
 
       if (!text || !text.trim()) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
         res.end(JSON.stringify({ error: 'Missing text parameter' }));
         return;
       }
@@ -103,35 +198,40 @@ const server = http.createServer(async (req, res) => {
       const hash = crypto.createHash('md5').update(`${cleanText}_${voice}_${rate}_${pitch}`).digest('hex');
       const audioPath = path.join(CACHE_DIR, `${hash}.mp3`);
 
-      // Cache Hit (Instant response)
-      if (fs.existsSync(audioPath)) {
-        res.writeHead(200, {
-          'Content-Type': 'audio/mpeg',
-          'Cache-Control': 'public, max-age=31536000, immutable',
-          'Access-Control-Allow-Origin': '*'
-        });
-        fs.createReadStream(audioPath).pipe(res);
+      // 1.1 Cache Hit: File exists and has data
+      if (fs.existsSync(audioPath) && fs.statSync(audioPath).size > 0) {
+        sendAudioFile(req, res, audioPath);
         return;
       }
 
-      // Generate via MsEdgeTTS Stream
+      // 1.2 In-Flight Synthesis: Coalesce simultaneous requests for same phrase
+      if (inFlightSyntheses.has(hash)) {
+        try {
+          await inFlightSyntheses.get(hash);
+          if (fs.existsSync(audioPath) && fs.statSync(audioPath).size > 0) {
+            sendAudioFile(req, res, audioPath);
+            return;
+          }
+        } catch (e) {
+          // If in-flight synthesis failed, proceed to try again below
+        }
+      }
+
+      // 1.3 Synthesize with MsEdgeTTS atomically
+      const synthPromise = synthesizeToFile(cleanText, voice, rate, pitch, audioPath);
+      inFlightSyntheses.set(hash, synthPromise);
+
       try {
-        const client = await getTTSClient(voice);
-        const { audioStream } = await client.toStream(cleanText, { rate, pitch });
-
-        res.writeHead(200, {
-          'Content-Type': 'audio/mpeg',
-          'Cache-Control': 'public, max-age=31536000, immutable',
-          'Access-Control-Allow-Origin': '*'
-        });
-
-        const fileWs = fs.createWriteStream(audioPath);
-        audioStream.pipe(fileWs);
-        audioStream.pipe(res);
+        await synthPromise;
+        sendAudioFile(req, res, audioPath);
       } catch (streamErr) {
         console.error('[TTS Stream Error]:', streamErr);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'TTS stream error', details: streamErr.message }));
+        if (!res.headersSent) {
+          res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ error: 'TTS stream error', details: streamErr.message }));
+        }
+      } finally {
+        inFlightSyntheses.delete(hash);
       }
       return;
     }

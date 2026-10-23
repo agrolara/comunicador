@@ -18,6 +18,7 @@ class TTSService {
     this.hapticEnabled = true;
     this.currentAudio = null;
     this.audioCache = new Map(); // url -> Audio instance
+    this.preloadedUrls = new Set();
     this.highlightInterval = null;
   }
 
@@ -75,6 +76,7 @@ class TTSService {
     if (this.voiceProfile !== profile) {
       this.voiceProfile = profile;
       this.audioCache.clear();
+      this.preloadedUrls.clear();
     }
   }
 
@@ -92,19 +94,38 @@ class TTSService {
   preload(text) {
     if (!text || typeof window === 'undefined') return;
     const url = this.getAudioUrl(text);
-    if (!url || this.audioCache.has(url)) return;
+    if (!url || this.preloadedUrls.has(url)) return;
+    this.preloadedUrls.add(url);
 
-    try {
-      const audio = new Audio();
-      audio.preload = 'auto';
-      audio.src = url;
-      this.audioCache.set(url, audio);
-    } catch (e) {}
+    // Warm server cache and mobile browser HTTP cache proactively with fetch
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error('Preload fetch failed');
+        return res.blob();
+      })
+      .then(blob => {
+        const objectUrl = URL.createObjectURL(blob);
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.src = objectUrl;
+        this.audioCache.set(url, audio);
+      })
+      .catch(() => {
+        try {
+          const audio = new Audio();
+          audio.preload = 'auto';
+          audio.src = url;
+          this.audioCache.set(url, audio);
+        } catch (e) {}
+      });
   }
 
   // Speak single word or text immediately
   speak(text, onEnd = null) {
-    if (!text) return;
+    if (!text) {
+      if (onEnd) onEnd();
+      return;
+    }
     this.stop();
 
     const config = this.getProfileConfig();
@@ -119,7 +140,9 @@ class TTSService {
       }
 
       this.currentAudio = audio;
-      audio.currentTime = 0;
+      try {
+        if (audio.currentTime > 0) audio.currentTime = 0;
+      } catch (e) {}
 
       audio.onended = () => {
         this.currentAudio = null;
@@ -146,7 +169,10 @@ class TTSService {
 
   // Speak sentence as ONE continuous, fluent human phrase with synchronous card highlights
   speakSentence(items, onHighlight = null, onComplete = null) {
-    if (!items || items.length === 0) return;
+    if (!items || items.length === 0) {
+      if (onComplete) onComplete();
+      return;
+    }
     this.stop();
 
     // 1. Join items into a single, cohesive spoken sentence
@@ -165,7 +191,9 @@ class TTSService {
       }
 
       this.currentAudio = audio;
-      audio.currentTime = 0;
+      try {
+        if (audio.currentTime > 0) audio.currentTime = 0;
+      } catch (e) {}
 
       // Synchronize visual card highlight smoothly across audio duration
       const updateHighlight = () => {
@@ -187,23 +215,59 @@ class TTSService {
         if (onComplete) onComplete();
       };
 
-      audio.onerror = () => {
+      // If full sentence fails, chain each card with Catalina's neural voice
+      const fallbackToSequential = () => {
         this.currentAudio = null;
-        // Fallback to local
-        this.speakSentenceLocal(items, onHighlight, onComplete);
+        this.speakSentenceSequential(items, onHighlight, () => {
+          if (onComplete) onComplete();
+        });
+      };
+
+      audio.onerror = (e) => {
+        console.warn('[TTS] Full sentence neural audio error, falling back to sequential Catalina:', e);
+        fallbackToSequential();
       };
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
-          // If playback was aborted due to user tapping another card/action, do not trigger local fallback
+          // If playback was aborted due to user tapping another card/action, do not trigger fallback
           if (err && err.name === 'AbortError') return;
-          this.speakSentenceLocal(items, onHighlight, onComplete);
+          console.warn('[TTS] Full sentence play() rejected, falling back to sequential Catalina:', err);
+          fallbackToSequential();
         });
       }
     } else {
       this.speakSentenceLocal(items, onHighlight, onComplete);
     }
+  }
+
+  // Sequential neural speaker fallback: Plays each card in sequence using Catalina/selected voice
+  speakSentenceSequential(items, onHighlight = null, onComplete = null) {
+    if (!items || items.length === 0) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    let currentIndex = 0;
+
+    const playNext = () => {
+      if (currentIndex >= items.length) {
+        if (onHighlight) onHighlight(null);
+        if (onComplete) onComplete();
+        return;
+      }
+
+      const item = items[currentIndex];
+      if (onHighlight) onHighlight(currentIndex);
+
+      this.speak(item.text, () => {
+        currentIndex++;
+        setTimeout(playNext, 60);
+      });
+    };
+
+    playNext();
   }
 
   getLocalVoiceConfig() {

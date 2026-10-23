@@ -133,7 +133,9 @@ class TTSService {
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
+        playPromise.catch((err) => {
+          // If playback was aborted due to another tap/sound, do not fallback to local
+          if (err && err.name === 'AbortError') return;
           this.speakLocal(text, onEnd);
         });
       }
@@ -193,7 +195,9 @@ class TTSService {
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
+        playPromise.catch((err) => {
+          // If playback was aborted due to user tapping another card/action, do not trigger local fallback
+          if (err && err.name === 'AbortError') return;
           this.speakSentenceLocal(items, onHighlight, onComplete);
         });
       }
@@ -270,13 +274,22 @@ class TTSService {
     return candidatePool[0];
   }
 
+  // Format text to prevent mobile TTS engines (Google/Android/iOS) from spelling uppercase words as acronyms
+  formatForLocalSpeech(rawText) {
+    if (!rawText) return '';
+    const clean = rawText.toString().trim().toLowerCase();
+    // Capitalize first letter so the local engine parses it as a natural Spanish word/phrase
+    return clean.charAt(0).toUpperCase() + clean.slice(1);
+  }
+
   // Fallback sentence speaker using Web Speech API
   speakSentenceLocal(items, onHighlight = null, onComplete = null) {
     if (!this.synth || !items || items.length === 0) return;
     this.synth.cancel();
 
     const fullText = items.map(item => item.text).join(' ');
-    const utterance = new SpeechSynthesisUtterance(fullText);
+    const formatted = this.formatForLocalSpeech(fullText);
+    const utterance = new SpeechSynthesisUtterance(formatted);
     const localConfig = this.getLocalVoiceConfig();
     utterance.lang = localConfig.lang;
     utterance.rate = localConfig.rate;
@@ -320,7 +333,8 @@ class TTSService {
     if (!this.synth || !text) return;
     this.synth.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const formatted = this.formatForLocalSpeech(text);
+    const utterance = new SpeechSynthesisUtterance(formatted);
     const localConfig = this.getLocalVoiceConfig();
     utterance.lang = localConfig.lang;
     utterance.rate = localConfig.rate;

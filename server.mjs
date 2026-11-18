@@ -316,7 +316,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       try {
-        const defaultMgmtKey = Buffer.from('c2stb3ItdjEtYzJmY2U3YjY1MzA0NTNkNzk5YmVhMTRjYjgzZjUxODU1ZmFjN2VlNDU2NWYwZTI3ZGEwYjE4Njk3ZmM2YmQ5Yg==', 'base64').toString('utf8');
+        const defaultMgmtKey = Buffer.from('c2stb3ItdjEtYzJmY2U3YjY1MzA0NTNkNzM5YmVhMTRjYjgzZjUxODU1ZmFjN2VlNDU2NWYwZTI3ZGEwYjE4Njk3ZmM2YmQ5Yg==', 'base64').toString('utf8');
         const mgmtKey = process.env.OPENROUTER_MANAGEMENT_KEY || defaultMgmtKey;
 
         const [creditsRes, keysRes] = await Promise.all([

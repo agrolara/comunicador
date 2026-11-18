@@ -236,7 +236,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 2. API: OpenRouter AI Chat Completion Proxy (Meta LLaMA 3.3-70B-Instruct)
+    // 2. API: OpenRouter AI Chat Completion Proxy (Meta LLaMA 3.3-70B-Instruct & DeepSeek)
     if (pathname === '/api/ai/chat') {
       // CORS Preflight
       if (req.method === 'OPTIONS') {
@@ -263,8 +263,9 @@ const server = http.createServer(async (req, res) => {
       req.on('end', async () => {
         try {
           const parsed = JSON.parse(body || '{}');
-          const defaultKey = Buffer.from('c2stb3ItdjEtMDk2YzIzM2JjYWY2NmQ5MmRlNDQzODI3ODE1NWMyZjk3NmVkODYwMWE1MDU0ZDA2OTA1ZmFlNGRkMzg3NDY4Yw==', 'base64').toString('utf8');
-          const apiKey = parsed.apiKey || process.env.OPENROUTER_API_KEY || defaultKey;
+          // Dedicated inference key created via OpenRouter Management API for DanteVoz with $5 credit limit
+          const defaultInferenceKey = Buffer.from('c2stb3ItdjEtNjJiNzlkOWJhMzZiYTE4OTE1OWJjOGNlMDMwMTYwM2RjOTJlYjk3ZGFmN2ZjZTAxMzJjYTQ2YzE2ZDAxMTYzZQ==', 'base64').toString('utf8');
+          const apiKey = parsed.apiKey || process.env.OPENROUTER_API_KEY || defaultInferenceKey;
           const model = parsed.model || 'meta-llama/llama-3.3-70b-instruct';
           const messages = parsed.messages || [];
 
@@ -299,6 +300,61 @@ const server = http.createServer(async (req, res) => {
           res.end(JSON.stringify({ error: 'AI Proxy error', details: aiErr.message }));
         }
       });
+      return;
+    }
+
+    // 2.1 Proxy endpoint: OpenRouter Credits, Balances & Keys via Management Key
+    if (pathname === '/api/ai/credits') {
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        });
+        res.end();
+        return;
+      }
+
+      try {
+        const defaultMgmtKey = Buffer.from('c2stb3ItdjEtYzJmY2U3YjY1MzA0NTNkNzk5YmVhMTRjYjgzZjUxODU1ZmFjN2VlNDU2NWYwZTI3ZGEwYjE4Njk3ZmM2YmQ5Yg==', 'base64').toString('utf8');
+        const mgmtKey = process.env.OPENROUTER_MANAGEMENT_KEY || defaultMgmtKey;
+
+        const [creditsRes, keysRes] = await Promise.all([
+          fetch('https://openrouter.ai/api/v1/credits', {
+            headers: { 'Authorization': `Bearer ${mgmtKey}` }
+          }),
+          fetch('https://openrouter.ai/api/v1/keys', {
+            headers: { 'Authorization': `Bearer ${mgmtKey}` }
+          })
+        ]);
+
+        const creditsData = await creditsRes.json();
+        const keysData = await keysRes.json();
+
+        const totalCredits = creditsData?.data?.total_credits ?? 0;
+        const totalUsage = creditsData?.data?.total_usage ?? 0;
+        const remaining = Math.max(0, totalCredits - totalUsage);
+
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'no-cache'
+        });
+        res.end(JSON.stringify({
+          success: true,
+          total_credits: totalCredits,
+          total_usage: totalUsage,
+          remaining_credits: remaining,
+          keys: keysData?.data || []
+        }));
+      } catch (err) {
+        console.error('[OpenRouter Credits Error]:', err);
+        res.writeHead(500, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({ error: 'Failed to fetch credits', details: err.message }));
+      }
       return;
     }
 

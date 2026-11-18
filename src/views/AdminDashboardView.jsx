@@ -168,6 +168,31 @@ export default function AdminDashboardView() {
   const [testingModelId, setTestingModelId] = useState(null);
   const [testModelResult, setTestModelResult] = useState(null);
   const [modelChangeNotification, setModelChangeNotification] = useState('');
+  const [accountCredits, setAccountCredits] = useState(null);
+  const [isLoadingCredits, setIsLoadingCredits] = useState(false);
+
+  // Auto-fetch account credits & refresh live models catalog on dashboard mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsLoadingCredits(true);
+      aiService.fetchCredits()
+        .then(data => {
+          if (data && data.success) {
+            setAccountCredits(data);
+          }
+        })
+        .finally(() => setIsLoadingCredits(false));
+
+      // Auto-load all 470+ live models in background if not already populated
+      aiService.fetchLiveModels()
+        .then(fresh => {
+          if (fresh && fresh.length > 0) {
+            setModelsList(fresh);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   const handleRefreshModels = async () => {
     setIsLoadingModels(true);
@@ -1573,6 +1598,75 @@ export default function AdminDashboardView() {
               )}
             </form>
           </div>
+
+          {/* ========================================================================= */}
+          {/* OPENROUTER MANAGEMENT & CREDITS LIVE STATUS */}
+          {/* ========================================================================= */}
+          {accountCredits && (
+            <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-300 rounded-3xl p-5 shadow-xs space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                    <Coins className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-black text-slate-800 text-base md:text-lg">
+                        Cuenta y Créditos en OpenRouter
+                      </h4>
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full">
+                        Management Key Activa
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 font-medium">
+                      Control de aprovisionamiento y saldo en tiempo real para el comunicador.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-white/90 border border-emerald-200 px-3.5 py-2 rounded-2xl shadow-2xs self-start sm:self-auto">
+                  <div className="text-right">
+                    <div className="text-[10px] font-black uppercase text-slate-500">Saldo Disponible</div>
+                    <div className="text-base font-black text-emerald-700">
+                      ${Number(accountCredits.remaining_credits || 0).toFixed(2)} USD
+                    </div>
+                  </div>
+                  <div className="h-7 w-[1px] bg-slate-200" />
+                  <div className="text-left">
+                    <div className="text-[10px] font-black uppercase text-slate-500">Consumo Acumulado</div>
+                    <div className="text-xs font-bold text-slate-700">
+                      ${Number(accountCredits.total_usage || 0).toFixed(2)} / ${Number(accountCredits.total_credits || 0).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Sub-keys info */}
+              {Array.isArray(accountCredits.keys) && accountCredits.keys.length > 0 && (
+                <div className="pt-2 border-t border-emerald-200/60 flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-600">Llaves de tu cuenta:</span>
+                  {accountCredits.keys.map((k, idx) => (
+                    <span 
+                      key={k.hash || idx}
+                      className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
+                        k.name === 'comunicador' || k.name === 'dantevoz-app-inferences'
+                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300 font-black'
+                          : 'bg-white/80 text-slate-700 border-slate-200'
+                      }`}
+                    >
+                      <KeyRound className="w-3 h-3 text-emerald-700" />
+                      <span>{k.name || 'key'}</span>
+                      {k.limit !== null && (
+                        <span className="bg-white/80 px-1 py-0.2 rounded text-[9px] text-emerald-800">
+                          Tope: ${k.limit} USD
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ========================================================================= */}
           {/* OPENROUTER MODELS CATALOG & PRICING WITH FREE MODELS HIGHLIGHT */}

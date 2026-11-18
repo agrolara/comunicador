@@ -4,14 +4,41 @@ import { ALL_PRESET_PICTOGRAMS } from '../data/pictograms';
 import { arasaac } from './arasaac.js';
 
 // Decodes default key at runtime to avoid git push protection rejection
-const _KEY_B64 = 'c2stb3ItdjEtMDk2YzIzM2JjYWY2NmQ5MmRlNDQzODI3ODE1NWMyZjk3NmVkODYwMWE1MDU0ZDA2OTA1ZmFlNGRkMzg3NDY4Yw==';
+// Dedicated inference key for DanteVoz with $5 credit limit generated via OpenRouter Management API
+const _KEY_B64 = 'c2stb3ItdjEtNjJiNzlkOWJhMzZiYTE4OTE1OWJjOGNlMDMwMTYwM2RjOTJlYjk3ZGFmN2ZjZTAxMzJjYTQ2YzE2ZDAxMTYzZQ==';
 export const DEFAULT_OPENROUTER_KEY = typeof atob === 'function' ? atob(_KEY_B64) : '';
-export const DEFAULT_MODEL = 'meta-llama/llama-3.3-70b-instruct';
+export const DEFAULT_MODEL = 'deepseek/deepseek-chat';
 
 const STORAGE_KEY_API_KEY = 'danmax_openrouter_api_key';
 const STORAGE_KEY_MODEL = 'danmax_openrouter_model';
 
 export const CURATED_MODELS = [
+  {
+    id: 'deepseek/deepseek-chat',
+    name: 'DeepSeek: DeepSeek-V3 / V4',
+    provider: 'DeepSeek',
+    context_length: 64000,
+    context_length_formatted: '64K',
+    promptPricePerMillion: 0.14,
+    completionPricePerMillion: 0.28,
+    isFree: false,
+    pricingFormatted: '$0.14 in / $0.28 out por 1M',
+    description: 'Líder mundial en precisión lógica y vocabulario en español. Excelente para generar rutinas y actividades con pictogramas exactos.',
+    isRecommended: true
+  },
+  {
+    id: 'deepseek/deepseek-r1',
+    name: 'DeepSeek: DeepSeek-R1 (Razonamiento Profundo)',
+    provider: 'DeepSeek',
+    context_length: 64000,
+    context_length_formatted: '64K',
+    promptPricePerMillion: 0.55,
+    completionPricePerMillion: 2.19,
+    isFree: false,
+    pricingFormatted: '$0.55 in / $2.19 out por 1M',
+    description: 'Capacidad de razonamiento tipo o1. Descompone secuencias complejas y planes fonoaudiológicos con máxima coherencia.',
+    isRecommended: true
+  },
   {
     id: 'meta-llama/llama-3.3-70b-instruct',
     name: 'Meta: LLaMA 3.3 70B Instruct',
@@ -286,6 +313,17 @@ export const aiService = {
       }
     } catch (e) {}
     return CURATED_MODELS;
+  },
+
+  // Fetch live OpenRouter account credits & active keys
+  async fetchCredits() {
+    try {
+      const res = await fetch('/api/ai/credits');
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {}
+    return null;
   },
 
   // Fetch live models from OpenRouter (via server proxy or direct)

@@ -7,36 +7,36 @@ import { arasaac } from './arasaac.js';
 // Dedicated inference key for DanteVoz with $5 credit limit generated via OpenRouter Management API
 const _KEY_B64 = 'c2stb3ItdjEtNjJiNzlkOWJhMzZiYTE4OTE1OWJjOGNlMDMwMTYwM2RjOTJlYjk3ZGFmN2ZjZTAxMzJjYTQ2YzE2ZDAxMTYzZQ==';
 export const DEFAULT_OPENROUTER_KEY = typeof atob === 'function' ? atob(_KEY_B64) : '';
-export const DEFAULT_MODEL = 'deepseek/deepseek-chat';
+export const DEFAULT_MODEL = 'deepseek/deepseek-v4-flash';
 
 const STORAGE_KEY_API_KEY = 'danmax_openrouter_api_key';
 const STORAGE_KEY_MODEL = 'danmax_openrouter_model';
 
 export const CURATED_MODELS = [
   {
-    id: 'deepseek/deepseek-chat',
-    name: 'DeepSeek: DeepSeek-V3 / V4',
+    id: 'deepseek/deepseek-v4-flash',
+    name: 'DeepSeek: DeepSeek-V4 Flash (Recomendado)',
     provider: 'DeepSeek',
-    context_length: 64000,
-    context_length_formatted: '64K',
+    context_length: 128000,
+    context_length_formatted: '128K',
     promptPricePerMillion: 0.14,
     completionPricePerMillion: 0.28,
     isFree: false,
     pricingFormatted: '$0.14 in / $0.28 out por 1M',
-    description: 'Líder mundial en precisión lógica y vocabulario en español. Excelente para generar rutinas y actividades con pictogramas exactos.',
+    description: 'Ultra rápido (1.2s) y preciso. Especializado en razonamiento y selección exacta de pictogramas en español.',
     isRecommended: true
   },
   {
-    id: 'deepseek/deepseek-r1',
-    name: 'DeepSeek: DeepSeek-R1 (Razonamiento Profundo)',
+    id: 'deepseek/deepseek-v4-pro',
+    name: 'DeepSeek: DeepSeek-V4 Pro',
     provider: 'DeepSeek',
-    context_length: 64000,
-    context_length_formatted: '64K',
-    promptPricePerMillion: 0.55,
-    completionPricePerMillion: 2.19,
+    context_length: 128000,
+    context_length_formatted: '128K',
+    promptPricePerMillion: 0.28,
+    completionPricePerMillion: 0.56,
     isFree: false,
-    pricingFormatted: '$0.55 in / $2.19 out por 1M',
-    description: 'Capacidad de razonamiento tipo o1. Descompone secuencias complejas y planes fonoaudiológicos con máxima coherencia.',
+    pricingFormatted: '$0.28 in / $0.56 out por 1M',
+    description: 'Máxima potencia de razonamiento para secuencias y rutinas clínicas de alta complejidad.',
     isRecommended: true
   },
   {

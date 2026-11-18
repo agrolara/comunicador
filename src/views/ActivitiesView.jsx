@@ -388,7 +388,7 @@ export default function ActivitiesView({ onNavigateTab }) {
         idea: aiIdea.trim(),
         toyOrItem: aiToy.trim(),
         durationMinutes: aiDuration,
-        patientName: 'Dante'
+        patientName: 'el niño'
       });
 
       const updated = [generated, ...activities];

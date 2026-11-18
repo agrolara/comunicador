@@ -510,7 +510,7 @@ export const aiService = {
   async generateClinicalReport({
     stats,
     promptLevel = '3',
-    patientName = 'Dante',
+    patientName = 'el niño',
     birthDate = '2020',
     therapistName = 'Mauricio Lara / Equipo Fonoaudiológico',
     centerName = 'Fundación Sin Barreras / Consulta CAA',
@@ -593,7 +593,7 @@ Redacta el informe de manera completa, profesional y detallada en español forma
   },
 
   // 2. Recomendador de Estrategias de Modelado CAA (ALS)
-  async generateModelingStrategies({ stats, topWords = [], userProfile = 'Dante' }) {
+  async generateModelingStrategies({ stats, topWords = [], userProfile = 'el niño' }) {
     const systemPrompt = `Eres un Especialista Internacional en Estrategias de Modelado en CAA y Estimulación de Lenguaje Asistido (Aided Language Stimulation - ALS).
 Propones estrategias prácticas, respetuosas con la regulación sensorial del niño y orientadas a la vida cotidiana (AVD) en el hogar y en la sala de clases.`;
 
@@ -628,7 +628,7 @@ Por favor estructura tu respuesta en:
   async generateSmartGoalsPIE({
     stats,
     currentGoals = [],
-    studentName = 'Dante',
+    studentName = 'el estudiante',
     gradeLevel = 'Educación Básica / Integración Escolar',
     focusArea = 'Todas las áreas (Rechazo, Combinación LME, Socialización y Autonomía)'
   }) {
@@ -669,9 +669,10 @@ Para cada meta, incluye:
   },
 
   // 4. Generador de Rutinas Diarias con IA y Pictogramas ARASAAC
-  async generateRoutine({ topic, patientName = 'Dante', stepsCount = 5 }) {
+  async generateRoutine({ topic, patientName = 'el niño', stepsCount = 5 }) {
     const systemPrompt = `Eres un Terapeuta Clínico Ocupacional y Fonoaudiólogo Especialista en Comunicación Aumentativa y Alternativa (CAA) y Agendas Visuales con pictogramas ARASAAC.
-Tu tarea es generar una rutina visual paso a paso clara, secuencial y motivadora para un niño no verbal / TEA llamado ${patientName}.
+Tu tarea es generar una rutina visual paso a paso clara, secuencial y motivadora para un niño no verbal / TEA.
+REGLA DE NEUTRALIDAD: NUNCA utilices nombres propios como "Dante" u otros; refiérete siempre de forma neutra como "el niño", "la niña" o "el pequeño".
 IMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto introductorio, sin explicaciones y sin bloques markdown como \`\`\`json. Solo el objeto JSON crudo.
 
 Estructura requerida:
@@ -739,9 +740,10 @@ IDs comunes de ARASAAC de referencia:
   },
 
   // 5. Generador de Historias Sociales con IA (Método Carol Gray)
-  async generateSocialStory({ topic, patientName = 'Dante', stepsCount = 5 }) {
+  async generateSocialStory({ topic, patientName = 'el niño', stepsCount = 5 }) {
     const systemPrompt = `Eres un Terapeuta Clínico y Fonoaudiólogo Especialista en Historias Sociales según el método oficial de Carol Gray para niños no verbales o dentro del espectro autista (TEA).
 Crea un cuento anticipatorio en primera persona ("Yo...", "A veces...", "Cuando...") con frases cortas, afirmativas, tranquilizadoras y empáticas.
+REGLA DE NEUTRALIDAD: NUNCA utilices nombres propios particulares como "Dante" u otros; utiliza siempre un tono en primera persona neutro ("Yo...") o habla de "el niño / la niña".
 IMPORTANTE: Debes responder ÚNICAMENTE con un objeto JSON válido, sin texto introductorio, sin explicaciones y sin bloques markdown como \`\`\`json. Solo el objeto JSON crudo.
 
 Estructura requerida:
@@ -813,7 +815,7 @@ IDs comunes de ARASAAC de referencia:
     idea = '',
     toyOrItem = '',
     durationMinutes = 5,
-    patientName = 'Dante'
+    patientName = 'el niño'
   }) {
     const levelMap = {
       '1': 'Nivel 1: Explorador (1 palabra, causa-efecto)',
@@ -835,15 +837,32 @@ IDs comunes de ARASAAC de referencia:
     };
 
     const systemPrompt = `Eres un Fonoaudiólogo Especialista Internacional en Estimulación de Lenguaje Asistido (ALS) y Estrategias Naturales de Modelado CAA para niños TEA / no verbales.
-Tu objetivo es diseñar una actividad o juego lúdico de ${durationMinutes} minutos para hacer en casa, al aire libre o en la escuela con el niño llamado ${patientName}.
-${idea ? `TEMÁTICA / IDEA ESPECÍFICA SOLICITADA POR EL USUARIO: "${idea}". (Ej: "vamos al lago", "en la piscina", "cocinar", etc.).
-REGLA DE ORO DE PICTOGRAMAS TEMÁTICOS:
-Debes centrar el juego en esta idea ("${idea}") y seleccionar 3 pictogramas EXACTOS y coherentes con ella.
-Por ejemplo:
-- Si la idea es "vamos al lago" o "lago": incluye LAGO (6022), AGUA (32464), VAMOS (8142) o NADAR (6568).
-- Si la idea es "piscina" o "alberca": incluye PISCINA (30516), NADAR (6568), AGUA (32464) o SALIR (6477).
-- Si la idea es "playa": incluye PLAYA (30518), ARENA (2697), VAMOS (8142).
-- Si la idea es con autos: incluye AUTO (2340), VAMOS (8142), PARAR (7196).` : ''}
+Tu objetivo es diseñar una actividad o juego lúdico de ${durationMinutes} minutos para hacer en casa, al aire libre o en la escuela con el niño o la niña.
+
+REGLAS CLÍNICAS OBLIGATORIAS:
+1. REGLA DE NEUTRALIDAD TOTAL (SIN NOMBRES PROPIOS ESPECÍFICOS):
+   NUNCA utilices nombres propios particulares como "Dante" u otros en el título, resumen, pasos ni instrucciones.
+   Refiérete siempre de forma neutra y amorosa como "el niño", "la niña", "el pequeño", "el hijo/a" o "el usuario".
+   - En la Fase 2 (Pausa Mágica): formula la instrucción diciendo "...espera 10 segundos mirando al niño/pequeño con calidez y paciencia".
+   - En la Fase 4 (Consecuencia Natural): formula la instrucción diciendo "...cuando el niño o la niña intente comunicarse, señalar o tocar la pantalla".
+
+2. REGLA DE ORO DE SINTAXIS CAA EN ESPAÑOL (ACCIÓN O PRONOMBRE AL INICIO):
+   En español y en Comunicación Aumentativa, las secuencias de pictogramas de petición, desplazamiento o juego NUNCA deben poner el verbo al medio ni al final (evitar la estructura tipo inglés).
+   Deben estructurarse obligatoriamente con la acción o pronombre al principio:
+   [ACCIÓN / VERBO PRINCIPAL o PRONOMBRE] + [LUGAR U OBJETO PRINCIPAL] + [ACTIVIDAD O DETALLE COMPLEMENTARIO].
+   Ejemplos obligatorios:
+   - Para ir a la playa: 
+       1. VAMOS (8142) -> Acción motora / desplazamiento
+       2. PLAYA (30518) -> Lugar de destino
+       3. ARENA (2697) o JUGAR (23392) o NADAR (6568) -> Textura / juego complementario
+       (NUNCA "PLAYA - VAMOS - ARENA").
+   - Con pronombre: 1. YO (34351) o QUIERO (5441) + 2. PLAYA (30518) + 3. JUGAR (23392).
+   - Para piscina: 1. VAMOS (8142) o NADAR (6568) + 2. PISCINA (30516) + 3. AGUA (32464) o JUGAR (23392).
+   - Para el lago: 1. VAMOS (8142) + 2. LAGO (6022) + 3. AGUA (32464) o NADAR (6568).
+   - Para el parque: 1. VAMOS (8142) + 2. PARQUE (2502) + 3. JUGAR (23392).
+   - Para autos: 1. VAMOS (8142) o JUGAR (23392) + 2. AUTO (2340) + 3. PARAR (7196) o MÁS (3220).
+
+${idea ? `TEMÁTICA / IDEA ESPECÍFICA SOLICITADA POR EL USUARIO: "${idea}". (Centrar el juego en esta idea respetando la sintaxis con el verbo o acción al inicio).` : ''}
 ${toyOrItem ? `Elemento o juguete disponible: "${toyOrItem}".` : ''}
 La actividad debe dar instrucciones claras al adulto sobre QUÉ HACER CON LAS MANOS, QUÉ DECIR y QUÉ PICTOGRAMA TOCAR.
 Nivel del niño: ${levelMap[level] || 'Nivel 1'}
@@ -861,9 +880,9 @@ Estructura requerida:
   "goalLabel": "${goalMap[goal] || 'Petición'}",
   "duration": "${durationMinutes} min",
   "pictograms": [
-    { "text": "PALABRA 1 (MAYÚSCULAS)", "arasaacId": 6022, "role": "Elemento clave temático (ej: LAGO, PISCINA, AUTO)" },
-    { "text": "PALABRA 2 (MAYÚSCULAS)", "arasaacId": 8142, "role": "Acción principal (ej: VAMOS, NADAR, ABRIR)" },
-    { "text": "PALABRA 3 (MAYÚSCULAS)", "arasaacId": 3220, "role": "Continuidad o límite (ej: MÁS, PARAR, AGUA)" }
+    { "text": "ACCIÓN O PRONOMBRE INICIAL (MAYÚSCULAS)", "arasaacId": 8142, "role": "Acción inicial o pronombre (ej: VAMOS, QUIERO, YO)" },
+    { "text": "LUGAR U OBJETO PRINCIPAL (MAYÚSCULAS)", "arasaacId": 30518, "role": "Lugar u objeto central (ej: PLAYA, PISCINA, AUTO)" },
+    { "text": "DETALLE O ACTIVIDAD (MAYÚSCULAS)", "arasaacId": 2697, "role": "Sensación, textura o actividad (ej: ARENA, NADAR, JUGAR)" }
   ],
   "steps": [
     {
@@ -874,19 +893,19 @@ Estructura requerida:
     },
     {
       "phase": "2. La Pausa Mágica (Expectante)",
-      "instruction": "Cómo pausar el juego y esperar 10 segundos en silencio con sonrisa.",
+      "instruction": "Cómo pausar el juego y esperar 10 segundos en silencio y con sonrisa mirando al niño/pequeño.",
       "adultScript": "",
       "tip": "No preguntes '¿qué quieres?'. Dale tiempo de procesar."
     },
     {
       "phase": "3. Modelado en el Comunicador",
-      "instruction": "Toca tú el pictograma en la pantalla mientras dices la palabra.",
+      "instruction": "Toca tú el pictograma de acción en la pantalla mientras dices la palabra clara.",
       "adultScript": "¡VAMOS!",
       "tip": "Mano bajo mano sólo si el niño lo acepta."
     },
     {
       "phase": "4. Consecuencia Natural Inmediata",
-      "instruction": "Acción inmediata de recompensa cuando el niño intente comunicarse.",
+      "instruction": "Acción inmediata de recompensa cuando el niño o la niña intente comunicarse o señalar.",
       "adultScript": "¡Eso es, vamos a jugar!",
       "tip": "La rapidez del refuerzo consolida el aprendizaje."
     }
@@ -895,14 +914,13 @@ Estructura requerida:
 }
 
 IDs comunes de ARASAAC para referencia verificados:
-- Lugares/Entornos: LAGO (6022), PISCINA (30516), PLAYA (30518), PARQUE (2502), RÍO (6023), BOTE (2311), CASA (2328), ESCUELA (2382)
-- Acciones: VAMOS (8142), PARAR (7196), NADAR (6568), ABRIR (24825), CERRAR (24976), ESPERAR (8109), JUGAR (23392), COMER (6456), BEBER (6061), SALIR (6477), ENTRAR (6478)
-- Núcleo: QUIERO (5441), MÁS (3220), NO (5526), SÍ (5584), AYUDA (12252), MIRA (6564), DAME (17038)
-- Objetos/Sensorial: AGUA (32464), SOL (2570), ARENA (2697), AUTO (2340), BURBUJAS (6945), BLOQUES (4935), PELOTA (3241), PLASTILINA (2529), TOBOGÁN (2588)
-- Turnos/Social: MI TURNO (6632), TU TURNO (25790), COMPARTIR (15361), HOLA (6522), CHAO (6028), GRACIAS (8129)
-- Emociones: FELIZ (9907), CALMA (31310), ENOJADO (35539), CANSADO (35537), COSQUILLAS (5480)`;
+- Lugares/Entornos: PLAYA (30518), PISCINA (30516), LAGO (6022), PARQUE (2502), RÍO (6023), CASA (2328), ESCUELA (2382)
+- Acciones: VAMOS (8142), IR (6524), PARAR (7196), NADAR (6568), ABRIR (24825), CERRAR (24976), ESPERAR (8109), JUGAR (23392), COMER (6456), BEBER (6061), SALIR (6477)
+- Núcleo / Pronombres: YO (34351), QUIERO (5441), MÁS (3220), NO (5526), SÍ (5584), AYUDA (12252), MIRA (6564), DAME (17038)
+- Objetos/Sensorial: ARENA (2697), AGUA (32464), SOL (2570), AUTO (2340), BURBUJAS (6945), BLOQUES (4935), PELOTA (3241), PLASTILINA (2529), TOBOGÁN (2588)
+- Turnos/Social: MI TURNO (6632), TU TURNO (25790), COMPARTIR (15361), HOLA (6522), CHAO (6028), GRACIAS (8129)`;
 
-    const userPrompt = `Crea un juego de modelado CAA para ${patientName}. ${idea ? `Idea o tema de la actividad: "${idea}".` : ''} ${toyOrItem ? `Elemento: "${toyOrItem}".` : ''} Nivel: ${levelMap[level] || 'Nivel 1'}. Selecciona 3 pictogramas temáticos altamente representativos.`;
+    const userPrompt = `Crea un juego de modelado CAA. ${idea ? `Idea o tema de la actividad: "${idea}".` : ''} ${toyOrItem ? `Elemento: "${toyOrItem}".` : ''} Nivel: ${levelMap[level] || 'Nivel 1'}. Recuerda ordenar los 3 pictogramas con la ACCIÓN O PRONOMBRE al inicio (ej: VAMOS, PLAYA, ARENA). Sin nombres propios específicos.`;
 
     const resolveVerifiedIdAsync = async (text, fallbackId) => {
       if (!text) return fallbackId || 3220;
@@ -993,27 +1011,27 @@ IDs comunes de ARASAAC para referencia verificados:
 
     if (lowerIdea.includes('lago')) {
       fallbackPics = [
-        { text: 'LAGO', arasaacId: 6022, role: 'Lugar de la actividad' },
-        { text: 'AGUA', arasaacId: 32464, role: 'Sensación y elemento' },
-        { text: 'VAMOS', arasaacId: 8142, role: 'Acción de avance' }
+        { text: 'VAMOS', arasaacId: 8142, role: 'Acción inicial' },
+        { text: 'LAGO', arasaacId: 6022, role: 'Lugar de destino' },
+        { text: 'AGUA', arasaacId: 32464, role: 'Sensación y elemento' }
       ];
     } else if (lowerIdea.includes('piscina') || lowerIdea.includes('pileta')) {
       fallbackPics = [
+        { text: 'VAMOS', arasaacId: 8142, role: 'Acción inicial' },
         { text: 'PISCINA', arasaacId: 30516, role: 'Lugar del juego' },
-        { text: 'NADAR', arasaacId: 6568, role: 'Acción motora' },
-        { text: 'AGUA', arasaacId: 32464, role: 'Elemento sensorial' }
+        { text: 'NADAR', arasaacId: 6568, role: 'Acción motora' }
       ];
     } else if (lowerIdea.includes('playa') || lowerIdea.includes('mar')) {
       fallbackPics = [
-        { text: 'PLAYA', arasaacId: 30518, role: 'Entorno natural' },
-        { text: 'ARENA', arasaacId: 2697, role: 'Textura' },
-        { text: 'VAMOS', arasaacId: 8142, role: 'Acción' }
+        { text: 'VAMOS', arasaacId: 8142, role: 'Acción inicial' },
+        { text: 'PLAYA', arasaacId: 30518, role: 'Lugar de destino' },
+        { text: 'ARENA', arasaacId: 2697, role: 'Textura y juego' }
       ];
     } else if (lowerIdea.includes('parque') || lowerIdea.includes('plaza')) {
       fallbackPics = [
+        { text: 'VAMOS', arasaacId: 8142, role: 'Acción inicial' },
         { text: 'PARQUE', arasaacId: 2502, role: 'Espacio al aire libre' },
-        { text: 'JUGAR', arasaacId: 23392, role: 'Actividad' },
-        { text: 'VAMOS', arasaacId: 8142, role: 'Desplazamiento' }
+        { text: 'JUGAR', arasaacId: 23392, role: 'Actividad' }
       ];
     }
 

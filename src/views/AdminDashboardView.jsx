@@ -131,11 +131,11 @@ export default function AdminDashboardView() {
 
   // AI Copilot States
   const [aiReportForm, setAiReportForm] = useState({
-    studentName: 'Dante',
+    studentName: '',
     birthYear: '2020',
     therapistName: 'Mauricio Lara / Equipo Fonoaudiológico',
     centerName: 'Fundación Sin Barreras / Consulta CAA',
-    extraNotes: 'Dante muestra mayor iniciativa con pictograma NO ante sobrecarga de ruido.'
+    extraNotes: 'El niño muestra mayor iniciativa con pictograma NO ante sobrecarga de ruido.'
   });
   const [aiReportResult, setAiReportResult] = useState('');
   const [aiReportLoading, setAiReportLoading] = useState(false);

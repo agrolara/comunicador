@@ -156,12 +156,12 @@ export default function TherapistDashboardView() {
       const res = await aiService.generateClinicalReport({
         stats,
         promptLevel,
-        patientName: 'Dante'
+        patientName: 'el niño'
       });
       setAiOutput(res);
       tts.playChime('success');
     } catch (err) {
-      setAiOutput(`❌ Error al conectar con OpenRouter (Llama 3.3-70B): ${err.message}`);
+      setAiOutput(`❌ Error al conectar con OpenRouter (DeepSeek V4): ${err.message}`);
     } finally {
       setAiLoading(false);
     }
@@ -175,12 +175,12 @@ export default function TherapistDashboardView() {
       const res = await aiService.generateModelingStrategies({
         stats,
         topWords: stats.topWords || [],
-        userProfile: 'Dante'
+        userProfile: 'el niño'
       });
       setAiOutput(res);
       tts.playChime('success');
     } catch (err) {
-      setAiOutput(`❌ Error al conectar con OpenRouter (Llama 3.3-70B): ${err.message}`);
+      setAiOutput(`❌ Error al conectar con OpenRouter (DeepSeek V4): ${err.message}`);
     } finally {
       setAiLoading(false);
     }
@@ -194,12 +194,12 @@ export default function TherapistDashboardView() {
       const res = await aiService.generateSmartGoalsPIE({
         stats,
         currentGoals: smartGoals,
-        studentName: 'Dante'
+        studentName: 'el estudiante'
       });
       setAiOutput(res);
       tts.playChime('success');
     } catch (err) {
-      setAiOutput(`❌ Error al conectar con OpenRouter (Llama 3.3-70B): ${err.message}`);
+      setAiOutput(`❌ Error al conectar con OpenRouter (DeepSeek V4): ${err.message}`);
     } finally {
       setAiLoading(false);
     }
@@ -229,7 +229,7 @@ export default function TherapistDashboardView() {
     return `INFORME EVOLUTIVO DE COMUNICACIÓN AUMENTATIVA Y ALTERNATIVA (CAA)
 Aplicación: "Esta es mi voz sin límites"
 Fecha: ${dateStr}
-Usuario: Dante
+Usuario: Niño / Alumno
 Fundación: Fundación Sin Barreras
 
 1. RESUMEN CUANTITATIVO DE USO:
@@ -403,7 +403,7 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              ¿Para qué usa el lenguaje? Clasifica automáticamente cada toque de Dante para asegurar que no solo pida cosas, sino que también rechace, salude y exprese dolor.
+              ¿Para qué usa el lenguaje? Clasifica automáticamente cada toque del niño para asegurar que no solo pida cosas, sino que también rechace, salude y exprese dolor.
             </p>
           </div>
 
@@ -507,13 +507,13 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              ¿Cuánta ayuda necesita Dante? Toca el nivel observado hoy. La meta es desvanecer el apoyo hasta alcanzar el Nivel 1 (Totalmente Autónomo).
+              ¿Cuánta ayuda necesita el niño? Toca el nivel observado hoy. La meta es desvanecer el apoyo hasta alcanzar el Nivel 1 (Totalmente Autónomo).
             </p>
           </div>
 
           <div className="space-y-2">
             {[
-              { id: '1', title: 'Nivel 1: Totalmente Espontáneo / Autónomo', desc: 'Dante toma el dispositivo por iniciativa propia sin que nadie se lo pida ni le señale nada.', color: 'border-emerald-300 bg-emerald-50 text-emerald-900' },
+              { id: '1', title: 'Nivel 1: Totalmente Espontáneo / Autónomo', desc: 'El niño toma el dispositivo por iniciativa propia sin que nadie se lo pida ni le señale nada.', color: 'border-emerald-300 bg-emerald-50 text-emerald-900' },
               { id: '2', title: 'Nivel 2: Pausa Expectante (10-15s)', desc: 'El adulto mira con cariño y espera 10 a 15 segundos en silencio, sin tocar la tablet.', color: 'border-blue-300 bg-blue-50 text-blue-900' },
               { id: '3', title: 'Nivel 3: Apoyo Visual / Gesto', desc: 'El adulto modela o apunta con su dedo hacia el pictograma en la pantalla para orientarlo.', color: 'border-amber-300 bg-amber-50 text-amber-900' },
               { id: '4', title: 'Nivel 4: Apoyo Verbal Indirecto', desc: 'El adulto pregunta de forma abierta: "¿Qué necesitas decirme?" o "¿Qué quieres?".', color: 'border-purple-300 bg-purple-50 text-purple-900' },
@@ -552,7 +552,7 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
                 <span>Objetivos Terapéuticos SMART Activos</span>
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Metas clínicas consensuadas. Usa [+] o [-] para registrar cada logro observado en Dante.
+                Metas clínicas consensuadas. Usa [+] o [-] para registrar cada logro observado en el niño.
               </p>
             </div>
 
@@ -569,7 +569,7 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
           {/* Inline Form to Add New Custom Goal */}
           {isAddingGoal && (
             <form onSubmit={handleAddNewGoal} className="p-3.5 bg-emerald-50 rounded-2xl border-2 border-emerald-300 space-y-2">
-              <span className="text-xs font-black text-emerald-900 block">Nueva Meta SMART para Dante:</span>
+              <span className="text-xs font-black text-emerald-900 block">Nueva Meta SMART para el niño:</span>
               <input
                 type="text"
                 value={newGoalText}
@@ -773,17 +773,17 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
                   3. ¿Cómo funcionan los Niveles de la Jerarquía de Apoyo?
                 </h4>
                 <p>
-                  Es la escala clínica estándar para medir la <strong>autonomía</strong> de Dante. Al enseñar comunicación aumentativa, nunca forzamos al niño. Se evalúa cuánta ayuda necesita:
+                  Es la escala clínica estándar para medir la <strong>autonomía</strong> del niño. Al enseñar comunicación aumentativa, nunca forzamos al niño. Se evalúa cuánta ayuda necesita:
                 </p>
                 <ul className="list-disc pl-4 space-y-0.5 pt-1 text-indigo-900 font-medium">
                   <li><strong>Nivel 5 (Guía Física):</strong> Mano bajo mano guiando el movimiento.</li>
                   <li><strong>Nivel 4 (Apoyo Verbal):</strong> Preguntar "¿Qué necesitas?".</li>
                   <li><strong>Nivel 3 (Apoyo Visual):</strong> El adulto apunta el pictograma con el dedo.</li>
                   <li><strong>Nivel 2 (Pausa Expectante):</strong> Mirada atenta y esperar 10 a 15 segundos sin hablar.</li>
-                  <li><strong>Nivel 1 (Espontáneo):</strong> Dante toma la tablet por iniciativa propia.</li>
+                  <li><strong>Nivel 1 (Espontáneo):</strong> El niño toma la tablet por iniciativa propia.</li>
                 </ul>
                 <p className="pt-1 text-indigo-950 font-bold">
-                  ✓ Cómo opera: Seleccionas el nivel que Dante necesitó hoy. La meta clínica es "desvanecer el apoyo" hacia el Nivel 1. Este dato se exporta automáticamente en el informe para la escuela.
+                  ✓ Cómo opera: Seleccionas el nivel que el niño necesitó hoy. La meta clínica es "desvanecer el apoyo" hacia el Nivel 1. Este dato se exporta automáticamente en el informe para la escuela.
                 </p>
               </div>
 
@@ -793,7 +793,7 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
                   4. ¿Qué es el LME / MLU?
                 </h4>
                 <p>
-                  Es la <strong>Longitud Media de Enunciado</strong>. Mide cuántas palabras promedio combina Dante en cada frase (ej: si dice solo "AGUA" su LME es 1.0; si combina "QUIERO AGUA" su LME es 2.0). La app lo calcula automáticamente cada vez que presiona oraciones en la barra.
+                  Es la <strong>Longitud Media de Enunciado</strong>. Mide cuántas palabras promedio combina el niño en cada frase (ej: si dice solo "AGUA" su LME es 1.0; si combina "QUIERO AGUA" su LME es 2.0). La app lo calcula automáticamente cada vez que presiona oraciones en la barra.
                 </p>
               </div>
             </div>
@@ -1004,7 +1004,7 @@ ${stats.topWords.map((w, idx) => `${idx + 1}. ${w.word} (${w.count} veces)`).joi
                   {aiCopilotTab === 'goals' && (
                     <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 flex items-center justify-between gap-2 flex-wrap">
                       <span className="font-bold text-purple-900 text-xs">
-                        💡 ¿Deseas incorporar un objetivo al tablero de seguimiento de Dante?
+                        💡 ¿Deseas incorporar un objetivo al tablero de seguimiento del niño?
                       </span>
                       <button
                         type="button"
